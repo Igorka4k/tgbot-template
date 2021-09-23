@@ -1,6 +1,10 @@
-from config import *
+from data.config import *
+from constants import *
+
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler
 from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+
+import json
 
 updater = Updater(token=TOKEN, use_context=True)  # bot create.
 
@@ -20,7 +24,10 @@ def start_dialog(update, ctx):
 
 def command_list(update, ctx):
     """help command list"""
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут будет список команд.")
+    with open(CMD_LIST_PATH, "r", encoding="utf-8") as file:
+        all_the_commands = json.load(file)
+        formatting_commands = "\n\n".join([f"{key} - {val.capitalize()}." for key, val in all_the_commands.items()])
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text=formatting_commands)
 
 
 def first_question(update, ctx):
@@ -73,8 +80,8 @@ def unknown(update, ctx):
 dispatcher = updater.dispatcher  # dispatcher object, which manages all the handlers and something..
 
 # Handlers
-start_handler = CommandHandler("start", start, pass_user_data=True)
-command_list_handler = CommandHandler("command_list", command_list)
+start_handler = CommandHandler("start", start)
+command_list_handler = CommandHandler("help", command_list)
 stop_handler = CommandHandler("stop", stop)
 conv_handler = ConversationHandler(
     entry_points=[CommandHandler("go", start_dialog)],
