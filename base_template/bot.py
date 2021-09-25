@@ -72,6 +72,15 @@ def stop(update, ctx):
     return ConversationHandler.END
 
 
+def get_dates(update, ctx):
+    """ appointments getting from db """
+    from functions.timetable.db.tools import db_connect
+    connection = db_connect()
+    from functions.timetable.db.queries import get_data
+    print(get_data(connection))
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Кол-во грядущих онлайн-записей: {get_data(connection)}")
+
+
 def unknown(update, ctx):
     """unknown command chat-exception"""
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Неизвестная команда, пропишите /command_list")
@@ -92,6 +101,7 @@ conv_handler = ConversationHandler(
     },
     fallbacks=[stop_handler]
 )
+get_dates_handler = CommandHandler("get_dates", get_dates)
 
 unknown_handler = MessageHandler(Filters.command, unknown)
 
@@ -100,6 +110,7 @@ dispatcher.add_handler(start_handler)
 dispatcher.add_handler(command_list_handler)
 dispatcher.add_handler(conv_handler)
 dispatcher.add_handler(stop_handler)
+dispatcher.add_handler(get_dates_handler)
 
 dispatcher.add_handler(unknown_handler)
 

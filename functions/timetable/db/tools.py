@@ -1,5 +1,5 @@
 import pymysql
-from config import *
+from functions.timetable.db.config import *
 
 
 def db_connect():

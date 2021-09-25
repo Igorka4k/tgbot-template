@@ -18,12 +18,12 @@ def table_create(connection):
             print(ex)
 
 
-def data_print(connection):
+def get_data(connection):
     with connection.cursor() as cursor:
         check = "SELECT * FROM online_dates"
         cursor.execute(check)
-        for row in cursor.fetchall():
-            print(row)
+        count = len(cursor.fetchall())
+        return count
 
 
 def make_an_appointment(connection):
