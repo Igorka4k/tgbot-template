@@ -1,18 +1,12 @@
 import pymysql
+
+from tools import db_connect
 from config import *
+from queries import *
 
+connection = db_connect()
 
-try:
-    connection = pymysql.connect(
-        host=host,
-        port=3306,
-        password=password,
-        database=db_name,
-        user=user,
-        cursorclass=pymysql.cursors.DictCursor
-    )
-    print("successfully connected...")
-
-except Exception as ex:
-    print("connection refused.")
-    print(ex)
+make_an_appointment(connection)
+data_print(connection)
+# delete_appointment(connection)
+clear_appointments(connection)
