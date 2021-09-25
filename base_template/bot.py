@@ -77,8 +77,8 @@ def get_dates(update, ctx):
     from functions.timetable.db.tools import db_connect
     connection = db_connect()
     from functions.timetable.db.queries import get_data
-    print(get_data(connection))
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Кол-во грядущих онлайн-записей: {get_data(connection)}")
+    print("тест1", get_data(connection))
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"{get_data(connection)}")
 
 
 def unknown(update, ctx):

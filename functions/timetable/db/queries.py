@@ -22,8 +22,16 @@ def get_data(connection):
     with connection.cursor() as cursor:
         check = "SELECT * FROM online_dates"
         cursor.execute(check)
-        count = len(cursor.fetchall())
-        return count
+        rows = cursor.fetchall()
+        count = len(rows)
+        formatting_data = []
+        for row in rows:
+            formatting_data.append(f"######\n\nИмя: {row['name']}\n\n"
+                                   f"Дата: {row['date']}\n\n"
+                                   f"Время: {row['time']}\n\n"
+                                   f"######")
+
+        return f"Кол-во записей: {count}\n######\n\n" + '\n\n'.join(formatting_data)
 
 
 def make_an_appointment(connection):
