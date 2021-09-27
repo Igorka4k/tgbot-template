@@ -1,6 +1,7 @@
 {
     "start": "command_description_here",
+    "timetable": "command_description_here",
     "help": "command_description_here",
-    "go": "command_description_here",
-    "stop": "command_description_here"
+    "stop": "command_description_here",
+    "get_dates": "command_description_here"
 }

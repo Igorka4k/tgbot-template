@@ -1,7 +1,4 @@
-import pymysql
-
-from tools import db_connect
-from functions.timetable.db.config import *
+from functions.timetable.tools import db_connect
 from queries import *
 
 connection = db_connect()
