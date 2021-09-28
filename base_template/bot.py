@@ -2,21 +2,15 @@ from base_template.data.config import *
 from base_template.constants import *
 from base_template.keyboards import *
 from functions.timetable.tools import CalendarCog
+from base_template.exceptions import *
 
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler
 from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 import json
+import functools
 
 updater = Updater(token=TOKEN, use_context=True)  # bot create.
-
-
-def unauthorized(update, ctx):
-    """pre-start message, asking write /start"""
-    if ctx.user_data.get("is_authorized", False):
-        pass
-
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Нажмите /start чтобы использовать бота.")
 
 
 def start(update, ctx):
@@ -30,8 +24,10 @@ def start(update, ctx):
     ctx.user_data["date_of_appointment"] = []
 
     # /start не может быть entry_point`ом в диалоге, поэтому просим начать диалог через отдельную команду /menu:
+    keyboard = ReplyKeyboardMarkup([["/menu"]], resize_keyboard=True)
     ctx.bot.send_message(chat_id=update.effective_chat.id,
-                         text='Приветствую, для использования бота нажмите сюда ==> /menu')
+                         text='Приветствую, для использования бота нажмите на кнопку перехода в меню.',
+                         reply_markup=keyboard)
 
 
 def menu(update, ctx):
@@ -97,24 +93,31 @@ def month_choosing(update, ctx):
     ctx.user_data["date_of_appointment"].append(year)
     ctx.user_data["date_of_appointment"].append(choice_month)
     day_choosing_keyboard = CalendarCog().get_days_keyboard(year, choice_month)
-    day_choosing_keyboard = [[i] for i in day_choosing_keyboard]
+    # day_choosing_keyboard = [[i] for i in day_choosing_keyboard]
     keyboard = ReplyKeyboardMarkup(day_choosing_keyboard, resize_keyboard=True)
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Теперь выберите день.", reply_markup=keyboard)
-    return "day_choosing"  # day_choosing
+    return "day_choosing"
 
 
+@only_after_today
+# ПОСТАРАТЬСЯ ЗАМЕНИТЬ ТО ЧТО ВЫШЕ НА ДЕКОРАТОР НИЖЕ ИНАЧЕ НЕБОЛЬШОЙ БРАХЕНС
+# @functools.partial(only_table_values,
+#                    collection=CalendarCog().get_days_keyboard(ctx.user_data["date_of_appointment"][0],
+#                                                               ctx.user_data["date_of_appointment"][1]))
 def day_choosing(update, ctx):
-    msg = update.message.text
     # !!!сделать проверку на ввод!!!
+    msg = update.message.text
     ctx.user_data["date_of_appointment"].append(msg)
     keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours(), resize_keyboard=True)
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Выберите теперь время.", reply_markup=keyboard)
     return "time_choosing"
 
 
+# метод partial позволяет передавать параметры в декоратор.
+@functools.partial(only_table_values, collection=CalendarCog().get_hours())
 def time_choosing(update, ctx):
     msg = update.message.text
-    # !!!сделать проверку на ввод!!!
+    # !!!сделать проверку на часы работы!!!
     ctx.user_data["date_of_appointment"].append(msg)
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Запись оформлена.",
                          reply_markup=ReplyKeyboardRemove())
@@ -122,10 +125,11 @@ def time_choosing(update, ctx):
 
 
 def timetable_script_finish(update, ctx):
+    # !!! сделать подстановку нулей через декоратор!!!
     date = ctx.user_data["date_of_appointment"][:]
-    if int(date[1]) <= 10:
+    if int(date[1]) < 10:
         date[1] = f"0{date[1]}"
-    if int(date[2]) <= 10:
+    if int(date[2]) < 10:
         date[2] = f"0{date[2]}"
     formatting_data = f"{date[0]}-{date[1]}-{date[2]}, {date[3]}"
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Вы записаны на {formatting_data}")
@@ -184,14 +188,15 @@ main_menu_conv_handler = ConversationHandler(
 get_dates_handler = CommandHandler("get_dates", get_dates)
 
 unknown_handler = MessageHandler(Filters.command, unknown)
-unauthorized_handler = MessageHandler(Filters.text, unauthorized)
 
-# Dispatcher adding
+# Dispatcher adding !!!ПРЕВОСХОДСТВО СЛУШАТЕЛЯ ЗАВИСИТ ОТ МОМЕНТА ЕГО ДОБАВЛЕНИЯ В ДИСПЕТЧЕР!!!
+###
 dispatcher.add_handler(start_handler)
+###
 dispatcher.add_handler(main_menu_conv_handler)
 dispatcher.add_handler(help_handler)
 dispatcher.add_handler(get_dates_handler)
-
+###
 dispatcher.add_handler(unknown_handler)
 
 updater.start_polling()
