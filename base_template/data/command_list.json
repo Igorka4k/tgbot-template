@@ -1,7 +1,6 @@
 {
-    "start": "command_description_here",
-    "timetable": "command_description_here",
-    "help": "command_description_here",
-    "stop": "command_description_here",
-    "get_dates": "command_description_here"
+    "start": "Автоматическая регистрация (для новых пользователей)",
+    "help": "Список доступных для использования команд (пока что вообще всех команд, даже не всегда доступных)",
+    "stop": "Принудительный переход в главное меню бота.",
+    "get_dates": "Команда для админов, выводящая все текущие онлайн-записи с датами."
 }

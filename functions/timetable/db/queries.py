@@ -17,7 +17,7 @@ def table_create(connection, title):
 
 
 def get_data(connection):
-    with connection.cursor() as cursor:
+    with connection.cursor() as cursor:  # Поработать над форматом вывода информации о клиентах, чтобы было красиво.
         check = "SELECT * FROM online_dates"
         cursor.execute(check)
         rows = cursor.fetchall()
@@ -29,7 +29,7 @@ def get_data(connection):
                                    f"Время: {row['time']}\n\n"
                                    f"######")
 
-        return f"Кол-во записей: {count}\n######\n\n" + '\n\n'.join(formatting_data)
+        return f"Кол-во записей: {count}\n\n" + '\n\n'.join(formatting_data)
 
 
 def is_authorized(connection, tg_account):
@@ -84,5 +84,5 @@ def clear_appointments(connection):
 # place for query tests:
 from functions.timetable.tools import db_connect
 
-# connection = db_connect()
-# new_user_adding(connection, "test_user", "@pipipi.ru")
+connection = db_connect()
+clear_appointments(connection)
