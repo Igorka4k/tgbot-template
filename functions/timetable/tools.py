@@ -33,11 +33,11 @@ class CalendarCog:
     def get_days_keyboard(self, year, month):
         d1 = datetime.date(year, month, 1)
         d2 = datetime.date(year, month + 1, 1)
-        days_keyboard = [str((d1 + datetime.timedelta(days=x)).day) for x in range((d2 - d1).days)]
+        days_keyboard = [[str((d1 + datetime.timedelta(days=x)).day)] for x in range((d2 - d1).days)]
         return days_keyboard
 
     def get_hours(self):
-        """сущик потом поменяет это на нормальный алгоритм с использованием datetime"""
+        # Бизнесу надо будет добавить возможность устанавливать нерабочие часы, например 20:00-10:00 + обед 13:30-14:00
         hours_keyboard = []
         for i in range(2):
             for hour in range(0, 24):
@@ -45,4 +45,4 @@ class CalendarCog:
                     hours_keyboard.append([f"{str(hour)}:00"])
                 else:
                     hours_keyboard.append([f"{str(hour)}:30"])
-        return sorted(hours_keyboard, key=lambda x: x[0])
+        return sorted(hours_keyboard, key=lambda x: [int(x[0].split(":")[0]), int(x[0].split(":")[1])])

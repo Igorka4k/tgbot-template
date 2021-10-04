@@ -2,36 +2,42 @@ from base_template.data.config import *
 from base_template.constants import *
 from base_template.keyboards import *
 from functions.timetable.tools import CalendarCog
+from base_template.exceptions import *
 
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler
 from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 import json
+import functools
 
 updater = Updater(token=TOKEN, use_context=True)  # bot create.
 
 
-def unauthorized(update, ctx):
-    """pre-start message, asking write /start"""
-    if ctx.user_data.get("is_authorized", False):
-        pass
-
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Нажмите /start чтобы использовать бота.")
-
-
 def start(update, ctx):
     """greeting"""
-
+    from functions.timetable.db import queries
+    from functions.timetable.tools import db_connect
     # короче надо будет как то сохранить инфу о том кто подписан на бота и проявляет активность,
     # у сущика уже есть идеи, можно побазарить как-нибудь, но пока тока запись о том что пользователь когда-то писал
     # /start, в ctx.user_data:
     # ctx.user_data initialization:
+    # ПРИМЕЧАНИЕ: Пока что есть такой косяк, что user_data сбрасывается при перезапуске бота.
     ctx.user_data["is_authorized"] = True
     ctx.user_data["date_of_appointment"] = []
+    ctx.user_data["username"] = update.message.from_user["username"]
+    ctx.user_data["full_name"] = update.message.from_user["full_name"]
+    connection = db_connect()
+    if not queries.is_authorized(connection, update.message.from_user["username"]):
+        queries.new_user_adding(connection, ctx.user_data["full_name"], ctx.user_data["username"])
+    else:
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы уже авторизованы, я вас запомнил.")
 
     # /start не может быть entry_point`ом в диалоге, поэтому просим начать диалог через отдельную команду /menu:
+    keyboard = ReplyKeyboardMarkup([["/menu"]], resize_keyboard=True)
     ctx.bot.send_message(chat_id=update.effective_chat.id,
-                         text='Приветствую, для использования бота нажмите сюда ==> /menu')
+                         text=f'Приветствую, {ctx.user_data["username"]},'
+                              f' для использования бота нажмите на кнопку перехода в меню.',
+                         reply_markup=keyboard)
 
 
 def menu(update, ctx):
@@ -72,6 +78,7 @@ def benefits_script(update, ctx):
     return menu(update, ctx)
 
 
+@functools.partial(only_table_values, collection=MONTH_CHOOSING_KEYBOARD, keyboard_type="month")
 def month_choosing(update, ctx):
     import datetime as dt
     msg = update.message.text
@@ -97,38 +104,51 @@ def month_choosing(update, ctx):
     ctx.user_data["date_of_appointment"].append(year)
     ctx.user_data["date_of_appointment"].append(choice_month)
     day_choosing_keyboard = CalendarCog().get_days_keyboard(year, choice_month)
-    day_choosing_keyboard = [[i] for i in day_choosing_keyboard]
     keyboard = ReplyKeyboardMarkup(day_choosing_keyboard, resize_keyboard=True)
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Теперь выберите день.", reply_markup=keyboard)
-    return "day_choosing"  # day_choosing
+    return "day_choosing"
 
 
+@functools.partial(only_table_values, keyboard_type="day")
 def day_choosing(update, ctx):
     msg = update.message.text
-    # !!!сделать проверку на ввод!!!
     ctx.user_data["date_of_appointment"].append(msg)
     keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours(), resize_keyboard=True)
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Выберите теперь время.", reply_markup=keyboard)
     return "time_choosing"
 
 
+# метод partial позволяет передавать параметры в декоратор.
+@functools.partial(only_table_values, collection=CalendarCog().get_hours(), keyboard_type="time")
 def time_choosing(update, ctx):
     msg = update.message.text
-    # !!!сделать проверку на ввод!!!
     ctx.user_data["date_of_appointment"].append(msg)
+
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Запись оформлена.",
                          reply_markup=ReplyKeyboardRemove())
     return timetable_script_finish(update, ctx)
 
 
 def timetable_script_finish(update, ctx):
-    date = ctx.user_data["date_of_appointment"][:]
-    if int(date[1]) <= 10:
+    from functions import timetable  # модуль для записи в бд.
+    from functions.timetable.db import queries
+    # date_of_appointment formatting:
+    date = ctx.user_data["date_of_appointment"]
+    if int(date[1]) < 10:
         date[1] = f"0{date[1]}"
-    if int(date[2]) <= 10:
+    if int(date[2]) < 10:
         date[2] = f"0{date[2]}"
-    formatting_data = f"{date[0]}-{date[1]}-{date[2]}, {date[3]}"
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Вы записаны на {formatting_data}")
+    formatting_date = f"{date[0]}-{date[1]}-{date[2]}, {date[3]}"
+
+    # db appointment adding
+    connection = timetable.tools.db_connect()
+    full_name = update.message.from_user["first_name"] + " " + update.message.from_user["last_name"]
+    date = f"{date[2]}-{date[1]}-{date[0]}"
+    time = date[3]
+    tg_account = update.message.from_user["username"]
+    queries.make_an_appointment(connection, full_name, date, time, tg_account)
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text=queries.get_data(connection))
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Вы записаны на {formatting_date}.")
     return ConversationHandler.END
 
 
@@ -184,14 +204,15 @@ main_menu_conv_handler = ConversationHandler(
 get_dates_handler = CommandHandler("get_dates", get_dates)
 
 unknown_handler = MessageHandler(Filters.command, unknown)
-unauthorized_handler = MessageHandler(Filters.text, unauthorized)
 
-# Dispatcher adding
+# Dispatcher adding !!!ПРЕВОСХОДСТВО СЛУШАТЕЛЯ ЗАВИСИТ ОТ МОМЕНТА ЕГО ДОБАВЛЕНИЯ В ДИСПЕТЧЕР!!!
+###
 dispatcher.add_handler(start_handler)
+###
 dispatcher.add_handler(main_menu_conv_handler)
 dispatcher.add_handler(help_handler)
 dispatcher.add_handler(get_dates_handler)
-
+###
 dispatcher.add_handler(unknown_handler)
 
 updater.start_polling()
