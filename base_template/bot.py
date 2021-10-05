@@ -2,6 +2,7 @@ from base_template.data.config import *
 from base_template.constants import *
 from base_template.keyboards import *
 from functions.timetable.tools import CalendarCog
+from functions.payments.example import payment_connect
 from base_template.exceptions import *
 
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler
@@ -212,6 +213,7 @@ dispatcher.add_handler(start_handler)
 dispatcher.add_handler(main_menu_conv_handler)
 dispatcher.add_handler(help_handler)
 dispatcher.add_handler(get_dates_handler)
+payment_connect(updater)
 ###
 dispatcher.add_handler(unknown_handler)
 

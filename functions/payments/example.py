@@ -1,8 +1,8 @@
 """Basic example for a bot that can receive payment from user."""
 
-from config import PAYMENT_TOKEN, TOKEN
+from functions.payments.config import PAYMENT_TOKEN, TOKEN
 
-from telegram import LabeledPrice, ShippingOption, Update
+from telegram import LabeledPrice, Update
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -55,15 +55,18 @@ def successful_payment_callback(update: Update, ctx: CallbackContext) -> None:
     update.message.reply_text("Благодарим за покупку!")
 
 
-def main() -> None:
-    updater = Updater(TOKEN)
+def payment_connect(updater: Updater) -> None:
+    """Adds required handlers"""
     dispatcher = updater.dispatcher
-
-    dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(CommandHandler("buy", create_invoice))
     dispatcher.add_handler(PreCheckoutQueryHandler(precheckout_callback))
     dispatcher.add_handler(MessageHandler(Filters.successful_payment, successful_payment_callback))
 
+
+def main() -> None:
+    updater = Updater(TOKEN)
+    updater.dispatcher.add_handler(CommandHandler("start", start))
+    payment_connect(updater)
     updater.start_polling()
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since

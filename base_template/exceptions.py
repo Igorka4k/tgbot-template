@@ -20,21 +20,24 @@ def only_table_values(func, collection=None, keyboard_type=None):
                 raise Exception
         except Exception as ex:
             print(ex)
-            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Ошибка, выберите предложенный вариант.")
+            ctx.bot.send_message(chat_id=update.effective_chat.id,
+                                 text="Ошибка, выберите предложенный вариант.")
             return "day_choosing"
         return func(update, ctx)
 
     def time_type(update, ctx):
         msg = update.message.text.lower()
         if msg not in [i[0].lower() for i in collection]:
-            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Ошибка, выберите предложенный вариант.")
+            ctx.bot.send_message(chat_id=update.effective_chat.id,
+                                 text="Ошибка, выберите предложенный вариант.")
             return "time_choosing"
         return func(update, ctx)
 
     def month_type(update, ctx):
         msg = update.message.text.lower()
         if msg not in [i[0].lower() for i in collection]:
-            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Ошибка, выберите предложенный вариант.")
+            ctx.bot.send_message(chat_id=update.effective_chat.id,
+                                 text="Ошибка, выберите предложенный вариант.")
             return "month_choosing"
         return func(update, ctx)
 
