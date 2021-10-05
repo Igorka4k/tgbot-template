@@ -2,6 +2,15 @@
 # например прерывать диалог, когда пользователь уходит из него коммандой /start к примеру.
 
 
+def only_admin(func):
+    def something(update, ctx):
+        if ctx.user_data["is_admin"]:
+            func(update, ctx)
+        else:
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text="У вас нет прав на использование этой команды.")
+    return something
+
+
 def only_table_values(func, collection=None, keyboard_type=None):
     def day_type(update, ctx):
         from functions.timetable.tools import CalendarCog

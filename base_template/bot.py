@@ -2,6 +2,8 @@ from base_template.data.config import *
 from base_template.constants import *
 from base_template.keyboards import *
 from functions.timetable.tools import CalendarCog
+from functions.timetable.db import queries
+from functions.timetable import tools
 from functions.payments.example import payment_connect
 from base_template.exceptions import *
 
@@ -16,7 +18,6 @@ updater = Updater(token=TOKEN, use_context=True)  # bot create.
 
 def start(update, ctx):
     """greeting"""
-    from functions.timetable.db import queries
     from functions.timetable.tools import db_connect
     # короче надо будет как то сохранить инфу о том кто подписан на бота и проявляет активность,
     # у сущика уже есть идеи, можно побазарить как-нибудь, но пока тока запись о том что пользователь когда-то писал
@@ -26,7 +27,11 @@ def start(update, ctx):
     ctx.user_data["is_authorized"] = True
     ctx.user_data["date_of_appointment"] = []
     ctx.user_data["username"] = update.message.from_user["username"]
-    ctx.user_data["full_name"] = update.message.from_user["full_name"]
+    ctx.user_data["is_admin"] = True if update.effective_chat.id in admin_chat else False
+    if update.message.from_user["full_name"] is None:
+        ctx.user_data["full_name"] = "Аноним"
+    else:
+        ctx.user_data["full_name"] = update.message.from_user["full_name"]
     connection = db_connect()
     if not queries.is_authorized(connection, update.message.from_user["username"]):
         queries.new_user_adding(connection, ctx.user_data["full_name"], ctx.user_data["username"])
@@ -43,7 +48,7 @@ def start(update, ctx):
 
 def menu(update, ctx):
     """main menu"""
-    if update.effective_chat.id in admin_chat:
+    if ctx.user_data["is_admin"]:
         keyboard = ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__admin, resize_keyboard=True)
     else:
         keyboard = ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__user, resize_keyboard=True)
@@ -54,12 +59,33 @@ def menu(update, ctx):
 
 def service_choosing(update, ctx):
     msg = update.message.text
-    if msg == "онлайн-запись":
-        return timetable_script(update, ctx)
-    if msg == "доходы":
-        return benefits_script(update, ctx)
-    if msg == "список конкурентов":
-        return competitors_script(update, ctx)
+
+    if ctx.user_data["is_admin"]:
+
+        if msg == "онлайн-записи":
+            return get_appointments_script(update, ctx)
+        if msg == "статистика доходов":
+            return benefits_script(update, ctx)
+        if msg == "Редактирование спец. предложений":
+            return competitors_script(update, ctx)
+        return "service_choosing"
+
+    if not ctx.user_data["is_admin"]:
+        if msg == "онлайн-запись":
+            return timetable_script(update, ctx)
+        if msg == "сертификаты":
+            return online_buy_script(update, ctx)
+
+
+def get_appointments_script(update, ctx):
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Информация по текущим записям:\n\n"
+                                                                + queries.get_data(connection=tools.db_connect()))
+    return "service_choosing"
+
+
+def online_buy_script(update, ctx):
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут будут предложения разных позиций цифровых товаров,"
+                                                                "таких как сертификаты и тд..")
     return "service_choosing"
 
 
@@ -132,7 +158,6 @@ def time_choosing(update, ctx):
 
 def timetable_script_finish(update, ctx):
     from functions import timetable  # модуль для записи в бд.
-    from functions.timetable.db import queries
     # date_of_appointment formatting:
     date = ctx.user_data["date_of_appointment"]
     if int(date[1]) < 10:
@@ -148,7 +173,6 @@ def timetable_script_finish(update, ctx):
     time = date[3]
     tg_account = update.message.from_user["username"]
     queries.make_an_appointment(connection, full_name, date, time, tg_account)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text=queries.get_data(connection))
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Вы записаны на {formatting_date}.")
     return ConversationHandler.END
 
@@ -163,17 +187,16 @@ def command_list(update, ctx):
 
 def stop(update, ctx):
     """dialog breaking"""
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Диалог прерван.",
-                         reply_markup=ReplyKeyboardRemove())
-    return ConversationHandler.END
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы принудительно вернулись в главное меню.")
+    return menu(update, ctx)
 
 
+@only_admin
 def get_dates(update, ctx):
     """ appointments getting from db """
     from functions.timetable.tools import db_connect
     connection = db_connect()
-    from functions.timetable.db.queries import get_data
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"{get_data(connection)}")
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"{queries.get_data(connection)}")
 
 
 def unknown(update, ctx):
