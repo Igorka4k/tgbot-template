@@ -1,3 +1,5 @@
+# Добавить декоратор(ы) для проверки дат и времени на соответствие настройкам администратора (бизнесмена).
+
 def only_table_values(func, collection=None, keyboard_type=None):
     def day_type(update, ctx):
         from functions.timetable.tools import CalendarCog
@@ -24,8 +26,9 @@ def only_table_values(func, collection=None, keyboard_type=None):
     def time_type(update, ctx):
         msg = update.message.text.lower()
         if msg not in [i[0].lower() for i in collection]:
-            ctx.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Ошибка, выберите предложенный вариант.")
+            # ТЕКСТ ОБ ОШИБКЕ НЕ ВЫВОДИТСЯ т.к. есть костыль связанный с добавлением callback_query в conv_handler
+            # ctx.bot.send_message(chat_id=update.effective_chat.id,
+            #                      text="Ошибка, выберите предложенный вариант.")
             return "time_choosing"
         return func(update, ctx)
 

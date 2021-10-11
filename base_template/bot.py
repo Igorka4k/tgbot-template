@@ -5,6 +5,8 @@ from functions.timetable.tools import CalendarCog
 from functions.timetable.db import queries
 from functions.timetable import tools
 from functions.payments.example import payment_connect
+from functions.timetable.example import timetable_connect
+from functions.timetable.example import start as timetable_start
 from base_template.exceptions import *
 
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler
@@ -72,9 +74,16 @@ def service_choosing(update, ctx):
 
     if not ctx.user_data["is_admin"]:
         if msg == "онлайн-запись":
-            return timetable_script(update, ctx)
+            return timetable_script_begin(update, ctx)
         if msg == "сертификаты":
             return online_buy_script(update, ctx)
+
+
+def timetable_script_begin(update, ctx):
+    """Подготовка к онлайн-записи"""
+    timetable_start(update, ctx)
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="/timetable - команда")
+    return "timetable_script"
 
 
 def get_appointments_script(update, ctx):
@@ -89,12 +98,6 @@ def online_buy_script(update, ctx):
     return "service_choosing"
 
 
-def timetable_script(update, ctx):
-    keyboard = ReplyKeyboardMarkup(MONTH_CHOOSING_KEYBOARD, resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Выберите месяц", reply_markup=keyboard)
-    return "month_choosing"
-
-
 def competitors_script(update, ctx):
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут будет список конкурентов.")
     return menu(update, ctx)
@@ -103,78 +106,6 @@ def competitors_script(update, ctx):
 def benefits_script(update, ctx):
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут будет список доходов.")
     return menu(update, ctx)
-
-
-@functools.partial(only_table_values, collection=MONTH_CHOOSING_KEYBOARD, keyboard_type="month")
-def month_choosing(update, ctx):
-    import datetime as dt
-    msg = update.message.text
-    if msg == "_назад_":
-        return menu(update, ctx)
-    word_to_num = {
-        "(текущий месяц)": dt.datetime.now().month,
-        "январь": 1,
-        "февраль": 2,
-        "март": 3,
-        "апрель": 4,
-        "май": 5,
-        "июнь": 6,
-        "июль": 7,
-        "август": 8,
-        "сентябрь": 9,
-        "октябрь": 10,
-        "ноябрь": 11,
-        "декабрь": 12,
-    }
-    choice_month = word_to_num[msg]
-    year = CalendarCog().get_year(choice_month)
-    ctx.user_data["date_of_appointment"].append(year)
-    ctx.user_data["date_of_appointment"].append(choice_month)
-    day_choosing_keyboard = CalendarCog().get_days_keyboard(year, choice_month)
-    keyboard = ReplyKeyboardMarkup(day_choosing_keyboard, resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Теперь выберите день.", reply_markup=keyboard)
-    return "day_choosing"
-
-
-@functools.partial(only_table_values, keyboard_type="day")
-def day_choosing(update, ctx):
-    msg = update.message.text
-    ctx.user_data["date_of_appointment"].append(msg)
-    keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours(), resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Выберите теперь время.", reply_markup=keyboard)
-    return "time_choosing"
-
-
-# метод partial позволяет передавать параметры в декоратор.
-@functools.partial(only_table_values, collection=CalendarCog().get_hours(), keyboard_type="time")
-def time_choosing(update, ctx):
-    msg = update.message.text
-    ctx.user_data["date_of_appointment"].append(msg)
-
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Запись оформлена.",
-                         reply_markup=ReplyKeyboardRemove())
-    return timetable_script_finish(update, ctx)
-
-
-def timetable_script_finish(update, ctx):
-    from functions import timetable  # модуль для записи в бд.
-    # date_of_appointment formatting:
-    date = ctx.user_data["date_of_appointment"]
-    if int(date[1]) < 10:
-        date[1] = f"0{date[1]}"
-    if int(date[2]) < 10:
-        date[2] = f"0{date[2]}"
-    formatting_date = f"{date[0]}-{date[1]}-{date[2]}, {date[3]}"
-
-    # db appointment adding
-    connection = timetable.tools.db_connect()
-    full_name = update.message.from_user["first_name"] + " " + update.message.from_user["last_name"]
-    date = f"{date[2]}-{date[1]}-{date[0]}"
-    time = date[3]
-    tg_account = update.message.from_user["username"]
-    queries.make_an_appointment(connection, full_name, date, time, tg_account)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Вы записаны на {formatting_date}.")
-    return ConversationHandler.END
 
 
 def command_list(update, ctx):
@@ -215,11 +146,6 @@ main_menu_conv_handler = ConversationHandler(
     entry_points=[main_menu_handler],
     states={
         "service_choosing": [MessageHandler(Filters.text & (~Filters.command), service_choosing)],
-        "timetable_script": [MessageHandler(Filters.text & (~Filters.command), timetable_script)],
-        "timetable_script_finish": [MessageHandler(Filters.text & (~Filters.command), timetable_script_finish)],
-        "time_choosing": [MessageHandler(Filters.text & (~Filters.command), time_choosing)],
-        "month_choosing": [MessageHandler(Filters.text & (~Filters.command), month_choosing)],
-        "day_choosing": [MessageHandler(Filters.text & (~Filters.command), day_choosing)],
         "benefits_script": [MessageHandler(Filters.text & (~Filters.command), benefits_script)],
         "competitors_script": [MessageHandler(Filters.text & (~Filters.command), competitors_script)],
     },
@@ -230,16 +156,20 @@ get_dates_handler = CommandHandler("get_dates", get_dates)
 unknown_handler = MessageHandler(Filters.command, unknown)
 
 # Dispatcher adding !!!ПРЕВОСХОДСТВО СЛУШАТЕЛЯ ЗАВИСИТ ОТ МОМЕНТА ЕГО ДОБАВЛЕНИЯ В ДИСПЕТЧЕР!!!
-###
+# ---1 level---
 dispatcher.add_handler(start_handler)
-###
+# ---2 level---
 dispatcher.add_handler(main_menu_conv_handler)
 dispatcher.add_handler(help_handler)
 dispatcher.add_handler(get_dates_handler)
+
+# external modules connection:
 payment_connect(updater)
-###
+timetable_connect(updater)
+
+# ---3 level---
 dispatcher.add_handler(unknown_handler)
 
-updater.start_polling()
-
-updater.idle()
+if __name__ == "__main__":
+    updater.start_polling()
+    updater.idle()

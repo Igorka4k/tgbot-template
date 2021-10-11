@@ -1,15 +1,14 @@
-from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler
-from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from config import TOKEN
+from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from functions.timetable.config import TOKEN
 from keyboards import MONTH_CHOOSING_KEYBOARD
-from tools import *
+from functions.timetable.tools import *
 from exceptions import *
-from db import queries
+from functions.timetable.db import queries
 import datetime as dt
+from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 
 import functools
-
-updater = Updater(token=TOKEN, use_context=True)
 
 
 def start(update, ctx):
@@ -19,10 +18,12 @@ def start(update, ctx):
     ctx.user_data["is_authorized"] = True
     ctx.user_data["date_of_appointment"] = []
     ctx.user_data["username"] = update.message.from_user["username"]
+    ctx.user_data["is_date_choice"] = False
 
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="hello")
-    keyboard = ReplyKeyboardMarkup(keyboard=[["/timetable"]], resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Bot functional testing", reply_markup=keyboard)
+    if __name__ == "__main__":
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="hello")
+        keyboard = ReplyKeyboardMarkup(keyboard=[["/timetable"]], resize_keyboard=True)
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Bot functional testing", reply_markup=keyboard)
 
 
 def timetable_script_begin(update, ctx):
@@ -39,9 +40,45 @@ def stop(update, ctx):
 
 
 def timetable_script(update, ctx):
-    keyboard = ReplyKeyboardMarkup(MONTH_CHOOSING_KEYBOARD, resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Выберите месяц", reply_markup=keyboard)
-    return "month_choosing"
+    # keyboard version:
+    # keyboard = ReplyKeyboardMarkup(MONTH_CHOOSING_KEYBOARD, resize_keyboard=True)
+    # ctx.bot.send_message(chat_id=update.effective_chat.id, text="Выберите месяц", reply_markup=keyboard)
+    # return "month_choosing"
+
+    # calendar version:
+    return calendar_script(update, ctx)
+
+
+def calendar_script(update, ctx):
+    calendar, step = DetailedTelegramCalendar().build()
+    ctx.bot.send_message(update.effective_chat.id,
+                         text=f"Выберите {LSTEP[step + '_ru']}:",
+                         reply_markup=calendar)
+    return "time_choosing"
+
+
+def calendar_date_callback(update, ctx):
+    """calendar callback-handler function"""
+    query = update.callback_query
+
+    result, key, step = DetailedTelegramCalendar().process(query.data)
+    if not result and key:
+        ctx.bot.edit_message_text(f"Выберите {LSTEP[step + '_ru']}:",
+                                  query.message.chat.id,
+                                  query.message.message_id,
+                                  reply_markup=key)
+    elif result:
+        ctx.bot.edit_message_text(f"Дата {result} выбрана.",
+                                  query.message.chat.id,
+                                  query.message.message_id)
+        year, month, day = str(result).split("-")
+        ctx.user_data["date_of_appointment"].extend([year, month, day])  # (Порядок: год-месяц-день)
+
+        # time_choosing redirect:
+        keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours(), resize_keyboard=True)
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Выберите теперь время.", reply_markup=keyboard)
+        ctx.user_data["is_date_choice"] = True
+        return "time_choosing"
 
 
 @functools.partial(only_table_values, collection=MONTH_CHOOSING_KEYBOARD, keyboard_type="month")
@@ -86,6 +123,8 @@ def day_choosing(update, ctx):
 # метод partial позволяет передавать параметры в декоратор.
 @functools.partial(only_table_values, collection=CalendarCog().get_hours(), keyboard_type="time")
 def time_choosing(update, ctx):
+    if not ctx.user_data["is_date_choice"]:
+        return "time_choosing"
     msg = update.message.text
     ctx.user_data["date_of_appointment"].append(msg)
 
@@ -97,10 +136,6 @@ def time_choosing(update, ctx):
 def timetable_script_finish(update, ctx):
     # date_of_appointment formatting:
     date = ctx.user_data["date_of_appointment"]
-    if int(date[1]) < 10:
-        date[1] = f"0{date[1]}"
-    if int(date[2]) < 10:
-        date[2] = f"0{date[2]}"
     formatting_date = f"{date[0]}-{date[1]}-{date[2]}, {date[3]}"
 
     # db appointment adding
@@ -111,12 +146,23 @@ def timetable_script_finish(update, ctx):
     tg_account = update.message.from_user["username"]
     queries.make_an_appointment(connection, full_name, date, time, tg_account)
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Вы записаны на {formatting_date}.")
+
+    # flags clearing:
+    ctx.user_data["is_date_choice"] = False
     return ConversationHandler.END
+
+
+def timetable_connect(updater: Updater) -> None:
+    """Adds required handlers"""
+    dispatcher = updater.dispatcher
+    dispatcher.add_handler(conv_handler)
+    dispatcher.add_handler(callback_query_handler)
 
 
 # handlers
 
 start_handler = CommandHandler("start", start)
+callback_query_handler = CallbackQueryHandler(callback=calendar_date_callback)
 conv_handler = ConversationHandler(
     entry_points=[CommandHandler("timetable", timetable_script)],
     states={
@@ -128,12 +174,17 @@ conv_handler = ConversationHandler(
     fallbacks=[CommandHandler("stop", stop)]
 )
 
-# dispatcher
 
-dispatcher = updater.dispatcher
+def main() -> None:
+    updater = Updater(token=TOKEN, use_context=True)
+    updater.dispatcher.add_handler(start_handler)
+    timetable_connect(updater)
+    updater.start_polling()
+    # Run the bot until you press Ctrl-C or the process receives SIGINT,
+    # SIGTERM or SIGABRT. This should be used most of the time, since
+    # start_polling() is non-blocking and will stop the bot gracefully.
+    updater.idle()
 
-dispatcher.add_handler(start_handler)
 
-dispatcher.add_handler(conv_handler)  # сущик вместо михендивского payment connect засунул весь процесс в conversation.
-
-updater.start_polling()
+if __name__ == "__main__":
+    main()
