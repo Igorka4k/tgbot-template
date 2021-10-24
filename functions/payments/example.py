@@ -1,24 +1,78 @@
 """Basic example for a bot that can receive payment from user."""
 
+
 from functions.payments.config import PAYMENT_TOKEN, TOKEN
 
-from telegram import LabeledPrice, Update
-from telegram.ext import (
-    Updater,
-    CommandHandler,
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update
+from telegram import LabeledPrice
 
-    PreCheckoutQueryHandler,
-    CallbackContext, MessageHandler, Filters,
-)
+from telegram.ext import CommandHandler, PreCheckoutQueryHandler, CallbackQueryHandler
+from telegram.ext import CallbackContext
+from telegram.ext import Filters
+from telegram.ext import MessageHandler
+from telegram.ext import Updater
+
+BACK = '<<'
+FORWARD = '>>'
+MORE = 'Подробнее'
+
+
+def get_data():
+    """return data from somewhere"""
+    return ['1/4', '2/4', '3/4', '4/4']
+
+
+data = get_data()
+
+
+def generate_keyboard():
+    return [[InlineKeyboardButton(BACK, callback_data=BACK),
+             InlineKeyboardButton(MORE, callback_data=MORE),
+             InlineKeyboardButton(FORWARD, callback_data=FORWARD)]]
 
 
 def start(update: Update, ctx: CallbackContext) -> None:
-    update.message.reply_text("Чтобы купить сертификат нажмите тут --> /buy")
+    update.message.reply_text("Купить сертификат /buy\n"
+                              "Посмотреть все товары /carousel")
 
 
-def create_invoice(update: Update, ctx: CallbackContext) -> None:
-    """Sends an invoice"""
+def show_carousel(update: Update, ctx: CallbackContext) -> None:
+    """Показывает "карусель" с определённым индексом"""
+    if "carousel_index" not in ctx.user_data:
+        ctx.user_data["carousel_index"] = 0
+    index = ctx.user_data["carousel_index"] % len(data)
     chat_id = update.message.chat_id
+    ctx.bot.send_message(chat_id=chat_id, text=str(data[index]),
+                         reply_markup=InlineKeyboardMarkup(generate_keyboard(),
+                                                           resize_keyboard=True))
+
+
+def keyboard_callback_handler(update: Update, ctx: CallbackContext) -> None:
+    """обработка коллбеков копок"""
+    query = update.callback_query
+    query_data = query.data
+    if "carousel_index" not in ctx.user_data:
+        ctx.user_data["carousel_index"] = 0
+    if query_data == MORE:
+        query.delete_message()
+        create_invoice(update, ctx, query.message.chat_id)
+    elif query_data == FORWARD:
+        ctx.user_data["carousel_index"] += 1
+        ctx.user_data["carousel_index"] %= len(data)
+        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]),
+                                reply_markup=InlineKeyboardMarkup(generate_keyboard()))
+    elif query_data == BACK:
+        ctx.user_data["carousel_index"] -= 1
+        ctx.user_data["carousel_index"] %= len(data)
+        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]),
+                                reply_markup=InlineKeyboardMarkup(generate_keyboard()))
+
+
+def create_invoice(update: Update, ctx: CallbackContext, chat_id=None) -> None:
+    """Sends an invoice"""
+    if chat_id is None:
+        chat_id = update.message.chat_id
     title = "Покупка сертификата"
     description = "Это тестовый платёж (ВВОДИТЕ ТОЛЬКО ТЕСТОВЫЕ ДАННЫЕ)"
     payload = "Оплата через бота №XXX"
@@ -67,6 +121,9 @@ def payment_connect(updater: Updater) -> None:
 def main() -> None:
     updater = Updater(TOKEN)
     updater.dispatcher.add_handler(CommandHandler("start", start))
+    updater.dispatcher.add_handler(CommandHandler("carousel", show_carousel))
+    updater.dispatcher.add_handler(
+        CallbackQueryHandler(callback=keyboard_callback_handler, pass_chat_data=True))
     payment_connect(updater)
     updater.start_polling()
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
