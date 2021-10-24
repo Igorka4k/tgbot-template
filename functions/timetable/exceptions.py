@@ -47,3 +47,12 @@ def only_table_values(func, collection=None, keyboard_type=None):
         return time_type
     if keyboard_type == "month":
         return month_type
+
+
+def only_admin(func):
+    def something(update, ctx):
+        if ctx.user_data["is_admin"]:
+            func(update, ctx)
+        else:
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text="У вас нет прав на использование этой команды.")
+    return something

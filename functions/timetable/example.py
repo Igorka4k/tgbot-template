@@ -1,7 +1,7 @@
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
-from functions.timetable.config import TOKEN
-from keyboards import MONTH_CHOOSING_KEYBOARD
+from functions.timetable.config import TOKEN, admin_chat
+from functions.timetable.keyboards import MONTH_CHOOSING_KEYBOARD, ONLINE_APPOINTMENTS_KEYBOARD__admin
 from functions.timetable.tools import *
 from exceptions import *
 from functions.timetable.db import queries
@@ -15,21 +15,25 @@ def start(update, ctx):
     """greeting"""
     # user_data init:
     ctx.user_data["date_of_appointment"] = []
-    ctx.user_data["is_authorized"] = True
-    ctx.user_data["date_of_appointment"] = []
-    ctx.user_data["username"] = update.message.from_user["username"]
     ctx.user_data["is_date_choice"] = False
+    return timetable_script_begin(update, ctx)
 
-    if __name__ == "__main__":
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text="hello")
-        keyboard = ReplyKeyboardMarkup(keyboard=[["/timetable"]], resize_keyboard=True)
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Bot functional testing", reply_markup=keyboard)
+    # if __name__ == "__main__":
+    #     ctx.bot.send_message(chat_id=update.effective_chat.id, text="hello")
+    #     keyboard = ReplyKeyboardMarkup(keyboard=[["/timetable"]], resize_keyboard=True)
+    #     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Bot functional testing", reply_markup=keyboard)
 
 
 def timetable_script_begin(update, ctx):
-    keyboard = ReplyKeyboardMarkup(keyboard=[["/timetable"]], resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Bot functional testing", reply_markup=keyboard)
+    """Подготовка к онлайн-записи"""
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="/timetable - команда")
     return "timetable_script"
+
+
+# def timetable_script_begin(update, ctx):
+#     keyboard = ReplyKeyboardMarkup(keyboard=[["/timetable"]], resize_keyboard=True)
+#     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Bot functional testing", reply_markup=keyboard)
+#     return "timetable_script"
 
 
 def stop(update, ctx):
@@ -46,6 +50,8 @@ def timetable_script(update, ctx):
     # return "month_choosing"
 
     # calendar version:
+    if ctx.user_data["is_admin"]:
+        return timetable_admin_menu(update, ctx)
     return calendar_script(update, ctx)
 
 
@@ -79,6 +85,34 @@ def calendar_date_callback(update, ctx):
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Выберите теперь время.", reply_markup=keyboard)
         ctx.user_data["is_date_choice"] = True
         return "time_choosing"
+
+
+def timetable_admin_menu_choice(update, ctx):
+    """ Обработка выбора в меню записей (у админа)"""
+    msg = update.message.text
+    if msg == "Список записей":
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вот текущие записи:")
+        return get_dates(update, ctx)
+    if msg == "Настройки":
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут будут настройки бота.")
+        return "timetable_admin_menu"
+
+
+@only_admin
+def get_dates(update, ctx):
+    """ appointments getting from db """
+    # надо обновить, отправлять не длинный список, а сообщение с кнопками редактируемое, которое можно будет
+    # менять. Кнопки: кол-во всех за всё время записей, ближайшая запись, все записи на какой-то промежуток времени
+    # (сегодня, неделя, месяц...); возможно скриншот бд со всеми записями.
+    from functions.timetable.tools import db_connect
+    connection = db_connect()
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"{queries.get_data(connection)}")
+
+
+def timetable_admin_menu(update, ctx):
+    keyboard = ReplyKeyboardMarkup(ONLINE_APPOINTMENTS_KEYBOARD__admin, resize_keyboard=True)
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут будет запись на приём.", reply_markup=keyboard)
+    return "timetable_admin_menu"
 
 
 @functools.partial(only_table_values, collection=MONTH_CHOOSING_KEYBOARD, keyboard_type="month")
@@ -163,10 +197,12 @@ def timetable_connect(updater: Updater) -> None:
 
 start_handler = CommandHandler("start", start)
 callback_query_handler = CallbackQueryHandler(callback=calendar_date_callback)
+get_dates_handler = CommandHandler("get_dates", get_dates)
 conv_handler = ConversationHandler(
     entry_points=[CommandHandler("timetable", timetable_script)],
     states={
         "timetable_script": [CommandHandler("timetable", timetable_script)],
+        "timetable_admin_menu": [MessageHandler(Filters.text & (~Filters.command), timetable_admin_menu_choice)],
         "month_choosing": [MessageHandler(Filters.text & (~Filters.command), month_choosing)],
         "day_choosing": [MessageHandler(Filters.text & (~Filters.command), day_choosing)],
         "time_choosing": [MessageHandler(Filters.text & (~Filters.command), time_choosing)]
@@ -177,7 +213,10 @@ conv_handler = ConversationHandler(
 
 def main() -> None:
     updater = Updater(token=TOKEN, use_context=True)
+    # Commands:
     updater.dispatcher.add_handler(start_handler)
+    updater.dispatcher.add_handler(get_dates_handler)
+    # =========
     timetable_connect(updater)
     updater.start_polling()
     # Run the bot until you press Ctrl-C or the process receives SIGINT,

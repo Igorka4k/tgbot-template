@@ -25,9 +25,9 @@ def start(update, ctx):
     # у сущика уже есть идеи, можно побазарить как-нибудь, но пока тока запись о том что пользователь когда-то писал
     # /start, в ctx.user_data:
     # ctx.user_data initialization:
-    # ПРИМЕЧАНИЕ: Пока что есть такой косяк, что user_data сбрасывается при перезапуске бота.
+    # ПРИМЕЧАНИЕ: Пока что есть такой косяк, что user_data сбрасывается при перезапуске бота,
+    # тупо потому что он обнуляет ctx при перезапуске, поэтому при запуске сначала надо писать /start.
     ctx.user_data["is_authorized"] = True
-    ctx.user_data["date_of_appointment"] = []
     ctx.user_data["username"] = update.message.from_user["username"]
     ctx.user_data["is_admin"] = True if update.effective_chat.id in admin_chat else False
     if update.message.from_user["full_name"] is None:
@@ -54,7 +54,7 @@ def menu(update, ctx):
         keyboard = ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__admin, resize_keyboard=True)
     else:
         keyboard = ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__user, resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text='Вы находитесь в главном меню бота.',
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы находитесь в главном меню бота.",
                          reply_markup=keyboard)
     return "service_choosing"
 
@@ -63,48 +63,33 @@ def service_choosing(update, ctx):
     msg = update.message.text
 
     if ctx.user_data["is_admin"]:
-
-        if msg == "онлайн-записи":
-            return get_appointments_script(update, ctx)
-        if msg == "статистика доходов":
-            return benefits_script(update, ctx)
-        if msg == "Редактирование спец. предложений":
-            return competitors_script(update, ctx)
+        if msg == "Онлайн-запись":
+            return timetable_start(update, ctx)  # меню админа по онлайн-записям.
+        if msg == "Сертификаты (редактирование позиций)":
+            return certificate_script(update, ctx)
+        if msg == "Рассылка спец. предложений":
+            return notifies_script(update, ctx)
         return "service_choosing"
 
-    if not ctx.user_data["is_admin"]:
-        if msg == "онлайн-запись":
-            return timetable_script_begin(update, ctx)
-        if msg == "сертификаты":
-            return online_buy_script(update, ctx)
+    elif not ctx.user_data["is_admin"]:
+        if msg == "Онлайн-запись":
+            # return timetable_admin_menu(update, ctx)
+            return timetable_start(update, ctx)
+        if msg == "Сертификаты":
+            return certificate_script(update, ctx)
 
 
-def timetable_script_begin(update, ctx):
-    """Подготовка к онлайн-записи"""
-    timetable_start(update, ctx)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="/timetable - команда")
-    return "timetable_script"
-
-
-def get_appointments_script(update, ctx):
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Информация по текущим записям:\n\n"
-                                                                + queries.get_data(connection=tools.db_connect()))
-    return "service_choosing"
-
-
-def online_buy_script(update, ctx):
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут будут предложения разных позиций цифровых товаров,"
-                                                                "таких как сертификаты и тд..")
-    return "service_choosing"
-
-
-def competitors_script(update, ctx):
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут будет список конкурентов.")
+def notifies_script(update, ctx):
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут можно будет отправить рассылку.")
     return menu(update, ctx)
 
 
-def benefits_script(update, ctx):
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут будет список доходов.")
+def certificate_script(update, ctx):
+    if ctx.user_data["is_admin"]:
+        msg_to_send = "Тут можно будет продать сертификаты."
+    else:
+        msg_to_send = "Тут можно будет купить сертификаты."
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text=msg_to_send)
     return menu(update, ctx)
 
 
@@ -112,7 +97,7 @@ def command_list(update, ctx):
     """help command list"""
     with open(CMD_LIST_PATH, "r", encoding="utf-8") as file:
         all_the_commands = json.load(file)
-        formatting_commands = "\n\n".join([f"{key} - {val.capitalize()}." for key, val in all_the_commands.items()])
+        formatting_commands = "\n\n".join([f"/{key} - {val.capitalize()}." for key, val in all_the_commands.items()])
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=formatting_commands)
 
 
@@ -120,14 +105,6 @@ def stop(update, ctx):
     """dialog breaking"""
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы принудительно вернулись в главное меню.")
     return menu(update, ctx)
-
-
-@only_admin
-def get_dates(update, ctx):
-    """ appointments getting from db """
-    from functions.timetable.tools import db_connect
-    connection = db_connect()
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"{queries.get_data(connection)}")
 
 
 def unknown(update, ctx):
@@ -146,12 +123,11 @@ main_menu_conv_handler = ConversationHandler(
     entry_points=[main_menu_handler],
     states={
         "service_choosing": [MessageHandler(Filters.text & (~Filters.command), service_choosing)],
-        "benefits_script": [MessageHandler(Filters.text & (~Filters.command), benefits_script)],
-        "competitors_script": [MessageHandler(Filters.text & (~Filters.command), competitors_script)],
+        "certificate_script": [MessageHandler(Filters.text & (~Filters.command), certificate_script)],
+        "notifies_script": [MessageHandler(Filters.text & (~Filters.command), notifies_script)],
     },
     fallbacks=[stop_handler]
 )
-get_dates_handler = CommandHandler("get_dates", get_dates)
 
 unknown_handler = MessageHandler(Filters.command, unknown)
 
@@ -161,10 +137,9 @@ dispatcher.add_handler(start_handler)
 # ---2 level---
 dispatcher.add_handler(main_menu_conv_handler)
 dispatcher.add_handler(help_handler)
-dispatcher.add_handler(get_dates_handler)
 
 # external modules connection:
-payment_connect(updater)
+# payment_connect(updater)
 timetable_connect(updater)
 
 # ---3 level---
