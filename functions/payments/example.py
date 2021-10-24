@@ -1,6 +1,5 @@
 """Basic example for a bot that can receive payment from user."""
 
-
 from functions.payments.config import PAYMENT_TOKEN, TOKEN
 
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
@@ -118,13 +117,17 @@ def payment_connect(updater: Updater) -> None:
     dispatcher.add_handler(MessageHandler(Filters.successful_payment, successful_payment_callback))
 
 
+def pay_carousel_connect(updater: Updater) -> None:
+    dispatcher = updater.dispatcher
+    dispatcher.add_handler(CommandHandler("carousel", show_carousel))
+    dispatcher.add_handler(CallbackQueryHandler(callback=keyboard_callback_handler, pass_chat_data=True))
+
+
 def main() -> None:
     updater = Updater(TOKEN)
     updater.dispatcher.add_handler(CommandHandler("start", start))
-    updater.dispatcher.add_handler(CommandHandler("carousel", show_carousel))
-    updater.dispatcher.add_handler(
-        CallbackQueryHandler(callback=keyboard_callback_handler, pass_chat_data=True))
     payment_connect(updater)
+    pay_carousel_connect(updater)
     updater.start_polling()
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since

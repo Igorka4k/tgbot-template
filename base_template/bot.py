@@ -4,7 +4,7 @@ from base_template.keyboards import *
 from functions.timetable.tools import CalendarCog
 from functions.timetable.db import queries
 from functions.timetable import tools
-from functions.payments.example import payment_connect
+from functions.payments.example import payment_connect, pay_carousel_connect
 from functions.timetable.example import timetable_connect
 from functions.timetable.example import start as timetable_start
 from base_template.exceptions import *
@@ -139,7 +139,8 @@ dispatcher.add_handler(main_menu_conv_handler)
 dispatcher.add_handler(help_handler)
 
 # external modules connection:
-# payment_connect(updater)
+payment_connect(updater)
+pay_carousel_connect(updater)
 timetable_connect(updater)
 
 # ---3 level---
