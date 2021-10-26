@@ -1,6 +1,5 @@
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
-from functions.timetable.config import TOKEN, admin_chat
 from functions.timetable.keyboards import MONTH_CHOOSING_KEYBOARD, ONLINE_APPOINTMENTS_KEYBOARD__admin
 from functions.timetable.tools import *
 from exceptions import *

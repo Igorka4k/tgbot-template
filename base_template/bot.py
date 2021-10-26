@@ -1,21 +1,30 @@
-from base_template.data.config import *
+from os import environ, path
+from dotenv import load_dotenv
+
 from base_template.constants import *
 from base_template.keyboards import *
-from functions.timetable.tools import CalendarCog
-from functions.timetable.db import queries
-from functions.timetable import tools
-from functions.payments.example import payment_connect, pay_carousel_connect
-from functions.timetable.example import timetable_connect
-from functions.timetable.example import start as timetable_start
 from base_template.exceptions import *
 
+from functions.timetable.tools import CalendarCog
+from functions.timetable.db import queries
+from functions.timetable.example import timetable_connect
+from functions.timetable.example import start as timetable_start
+
+from functions.payments.example import payment_connect, pay_carousel_connect
+
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler
-from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import ReplyKeyboardMarkup
 
 import json
-import functools
 
-updater = Updater(token=TOKEN, use_context=True)  # bot create.
+if path.exists('../.env'):  # Переменные окружения хранятся в основной директории проекта
+    load_dotenv('../.env')
+else:
+    raise ImportError("Can't import environment variables")
+
+ADMIN_CHAT = list(map(int, environ.get('ADMIN_CHAT').split(',')))
+
+updater = Updater(token=environ.get('BOT_TOKEN'), use_context=True)  # bot create.
 
 
 def start(update, ctx):
@@ -29,7 +38,7 @@ def start(update, ctx):
     # тупо потому что он обнуляет ctx при перезапуске, поэтому при запуске сначала надо писать /start.
     ctx.user_data["is_authorized"] = True
     ctx.user_data["username"] = update.message.from_user["username"]
-    ctx.user_data["is_admin"] = True if update.effective_chat.id in admin_chat else False
+    ctx.user_data["is_admin"] = True if update.effective_chat.id in ADMIN_CHAT else False
     if update.message.from_user["full_name"] is None:
         ctx.user_data["full_name"] = "Аноним"
     else:

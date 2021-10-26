@@ -1,7 +1,5 @@
 """Basic example for a bot that can receive payment from user."""
 
-from functions.payments.config import PAYMENT_TOKEN, TOKEN
-
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram import Update
 from telegram import LabeledPrice
@@ -11,6 +9,8 @@ from telegram.ext import CallbackContext
 from telegram.ext import Filters
 from telegram.ext import MessageHandler
 from telegram.ext import Updater
+
+from os import environ
 
 BACK = '<<'
 FORWARD = '>>'
@@ -75,7 +75,7 @@ def create_invoice(update: Update, ctx: CallbackContext, chat_id=None) -> None:
     title = "Покупка сертификата"
     description = "Это тестовый платёж (ВВОДИТЕ ТОЛЬКО ТЕСТОВЫЕ ДАННЫЕ)"
     payload = "Оплата через бота №XXX"
-    provider_token = PAYMENT_TOKEN
+    provider_token = environ.get('BOT_PAYMENT_TOKEN')
     currency = "RUB"
     price = 100
     prices = [LabeledPrice("Сертификат", price * 499)]
@@ -124,7 +124,7 @@ def pay_carousel_connect(updater: Updater) -> None:
 
 
 def main() -> None:
-    updater = Updater(TOKEN)
+    updater = Updater(environ.get('BOT_TOKEN'))
     updater.dispatcher.add_handler(CommandHandler("start", start))
     payment_connect(updater)
     pay_carousel_connect(updater)
