@@ -5,10 +5,8 @@ from functions.timetable.tools import CalendarCog
 from functions.timetable.db import queries
 from functions.timetable import tools
 from functions.payments.example import payment_connect
-from functions.timetable.example import timetable_connect
-from functions.timetable.example import start as timetable_start
+from functions.timetable.example import timetable_connect, timetable_script_begin
 from base_template.exceptions import *
-
 from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler
 from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
@@ -24,9 +22,8 @@ def start(update, ctx):
     # короче надо будет как то сохранить инфу о том кто подписан на бота и проявляет активность,
     # у сущика уже есть идеи, можно побазарить как-нибудь, но пока тока запись о том что пользователь когда-то писал
     # /start, в ctx.user_data:
+
     # ctx.user_data initialization:
-    # ПРИМЕЧАНИЕ: Пока что есть такой косяк, что user_data сбрасывается при перезапуске бота,
-    # тупо потому что он обнуляет ctx при перезапуске, поэтому при запуске сначала надо писать /start.
     ctx.user_data["is_authorized"] = True
     ctx.user_data["username"] = update.message.from_user["username"]
     ctx.user_data["is_admin"] = True if update.effective_chat.id in admin_chat else False
@@ -34,17 +31,18 @@ def start(update, ctx):
         ctx.user_data["full_name"] = "Аноним"
     else:
         ctx.user_data["full_name"] = update.message.from_user["full_name"]
+
+    # authorize check:
     connection = db_connect()
     if not queries.is_authorized(connection, update.message.from_user["username"]):
         queries.new_user_adding(connection, ctx.user_data["full_name"], ctx.user_data["username"])
     else:
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы уже авторизованы, я вас запомнил.")
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы уже авторизованы.")
 
-    # /start не может быть entry_point`ом в диалоге, поэтому просим начать диалог через отдельную команду /menu:
+    # entry_points пидорас, так как не отлавливает команду start как точку вхождения, юзаем костыль,
+    # но это не так критично:
     keyboard = ReplyKeyboardMarkup([["/menu"]], resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id,
-                         text=f'Приветствую, {ctx.user_data["username"]},'
-                              f' для использования бота нажмите на кнопку перехода в меню.',
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Нажмите кнопку ниже для перехода в меню",
                          reply_markup=keyboard)
 
 
@@ -64,7 +62,10 @@ def service_choosing(update, ctx):
 
     if ctx.user_data["is_admin"]:
         if msg == "Онлайн-запись":
-            return timetable_start(update, ctx)  # меню админа по онлайн-записям.
+            keyboard = ReplyKeyboardMarkup([["/timetable"]], resize_keyboard=True)
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Нажмите на кнопку ниже",
+                                 reply_markup=keyboard)
+            return timetable_script_begin(update, ctx)  # меню админа по онлайн-записям.
         if msg == "Сертификаты (редактирование позиций)":
             return certificate_script(update, ctx)
         if msg == "Рассылка спец. предложений":
@@ -73,8 +74,10 @@ def service_choosing(update, ctx):
 
     elif not ctx.user_data["is_admin"]:
         if msg == "Онлайн-запись":
-            # return timetable_admin_menu(update, ctx)
-            return timetable_start(update, ctx)
+            keyboard = ReplyKeyboardMarkup([["/timetable"]], resize_keyboard=True)
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Нажмите на кнопку ниже",
+                                 reply_markup=keyboard)
+            return timetable_script_begin(update, ctx)
         if msg == "Сертификаты":
             return certificate_script(update, ctx)
 
@@ -104,7 +107,7 @@ def command_list(update, ctx):
 def stop(update, ctx):
     """dialog breaking"""
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы принудительно вернулись в главное меню.")
-    return menu(update, ctx)
+    return ConversationHandler.END
 
 
 def unknown(update, ctx):
@@ -122,16 +125,17 @@ stop_handler = CommandHandler("stop", stop)
 main_menu_conv_handler = ConversationHandler(
     entry_points=[main_menu_handler],
     states={
+        # Main menu:
         "service_choosing": [MessageHandler(Filters.text & (~Filters.command), service_choosing)],
         "certificate_script": [MessageHandler(Filters.text & (~Filters.command), certificate_script)],
         "notifies_script": [MessageHandler(Filters.text & (~Filters.command), notifies_script)],
     },
-    fallbacks=[stop_handler]
-)
+    fallbacks=[main_menu_handler])
 
 unknown_handler = MessageHandler(Filters.command, unknown)
 
-# Dispatcher adding !!!ПРЕВОСХОДСТВО СЛУШАТЕЛЯ ЗАВИСИТ ОТ МОМЕНТА ЕГО ДОБАВЛЕНИЯ В ДИСПЕТЧЕР!!!
+# Dispatcher adding
+# !!!ПРЕВОСХОДСТВО СЛУШАТЕЛЯ ЗАВИСИТ ОТ МОМЕНТА ЕГО ДОБАВЛЕНИЯ В ДИСПЕТЧЕР!!!
 # ---1 level---
 dispatcher.add_handler(start_handler)
 # ---2 level---
