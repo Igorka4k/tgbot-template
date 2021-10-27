@@ -1,6 +1,10 @@
-from base_template.data.config import *
+from os import environ, path
+from dotenv import load_dotenv
+
 from base_template.constants import *
 from base_template.keyboards import *
+from base_template.exceptions import *
+
 from functions.timetable.tools import CalendarCog
 from functions.timetable.db import queries
 from functions.timetable import tools
@@ -11,9 +15,15 @@ from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, Conve
 from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 import json
-import functools
 
-updater = Updater(token=TOKEN, use_context=True)  # bot create.
+if path.exists('../.env'):  # Переменные окружения хранятся в основной директории проекта
+    load_dotenv('../.env')
+else:
+    raise ImportError("Can't import environment variables")
+
+ADMIN_CHAT = list(map(int, environ.get('ADMIN_CHAT').split(',')))
+
+updater = Updater(token=environ.get('BOT_TOKEN'), use_context=True)  # bot create.
 
 
 def start(update, ctx):
@@ -26,7 +36,7 @@ def start(update, ctx):
     # ctx.user_data initialization:
     ctx.user_data["is_authorized"] = True
     ctx.user_data["username"] = update.message.from_user["username"]
-    ctx.user_data["is_admin"] = True if update.effective_chat.id in admin_chat else False
+    ctx.user_data["is_admin"] = True if update.effective_chat.id in ADMIN_CHAT else False
     if update.message.from_user["full_name"] is None:
         ctx.user_data["full_name"] = "Аноним"
     else:
@@ -143,7 +153,8 @@ dispatcher.add_handler(main_menu_conv_handler)
 dispatcher.add_handler(help_handler)
 
 # external modules connection:
-# payment_connect(updater)
+payment_connect(updater)
+pay_carousel_connect(updater)
 timetable_connect(updater)
 
 # ---3 level---

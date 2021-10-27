@@ -1,16 +1,16 @@
 import pymysql
-from functions.timetable.db.config import *
 import datetime
+from os import environ
 
 
 def db_connect():
     try:
         connection = pymysql.connect(
-            host=host,
-            port=3306,
-            password=password,
-            database=db_name,
-            user=user,
+            host=environ.get('MYSQL_URL'),
+            port=int(environ.get('MYSQL_PORT')),
+            password=environ.get('MYSQL_PASS'),
+            database=environ.get('MYSQL_BASE_NAME'),
+            user=environ.get('MYSQL_USER'),
             cursorclass=pymysql.cursors.DictCursor
         )
         print("successfully connected...")
