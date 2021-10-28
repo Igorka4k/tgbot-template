@@ -10,39 +10,13 @@ from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 import functools
 
 
-def start(update, ctx):
-    """greeting"""
+def timetable_script_begin(update, ctx):
+    """Подготовка к онлайн-записи"""
+
     # user_data init:
     ctx.user_data["date_of_appointment"] = []
     ctx.user_data["is_date_choice"] = False
-    return timetable_script_begin(update, ctx)
 
-    # if __name__ == "__main__":
-    #     ctx.bot.send_message(chat_id=update.effective_chat.id, text="hello")
-    #     keyboard = ReplyKeyboardMarkup(keyboard=[["/timetable"]], resize_keyboard=True)
-    #     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Bot functional testing", reply_markup=keyboard)
-
-
-def timetable_script_begin(update, ctx):
-    """Подготовка к онлайн-записи"""
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="/timetable - команда")
-    return "timetable_script"
-
-
-# def timetable_script_begin(update, ctx):
-#     keyboard = ReplyKeyboardMarkup(keyboard=[["/timetable"]], resize_keyboard=True)
-#     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Bot functional testing", reply_markup=keyboard)
-#     return "timetable_script"
-
-
-def stop(update, ctx):
-    """stop"""
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Действие отменено.",
-                         reply_markup=ReplyKeyboardRemove())
-    return ConversationHandler.END
-
-
-def timetable_script(update, ctx):
     # keyboard version:
     # keyboard = ReplyKeyboardMarkup(MONTH_CHOOSING_KEYBOARD, resize_keyboard=True)
     # ctx.bot.send_message(chat_id=update.effective_chat.id, text="Выберите месяц", reply_markup=keyboard)
@@ -52,6 +26,13 @@ def timetable_script(update, ctx):
     if ctx.user_data["is_admin"]:
         return timetable_admin_menu(update, ctx)
     return calendar_script(update, ctx)
+
+
+def stop(update, ctx):
+    """stop"""
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Действие отменено.",
+                         reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
 
 
 def calendar_script(update, ctx):
@@ -93,8 +74,17 @@ def timetable_admin_menu_choice(update, ctx):
         ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вот текущие записи:")
         return get_dates(update, ctx)
     if msg == "Настройки":
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут будут настройки бота.")
-        return "timetable_admin_menu"
+        keyboard = ReplyKeyboardMarkup(ONLINE_APPOINTMENTS_KEYBOARD__admin, resize_keyboard=True)
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="На сколько будет доступна запись?",
+                             reply_markup=keyboard)
+        return "timetable_admin_menu_settings"
+
+
+def timetable_admin_menu_settings(update, ctx):
+    """Настройки онлайн-записи"""
+    msg = update.message.text
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="В разработке..")
+    return "timetable_admin_menu"
 
 
 @only_admin
@@ -190,18 +180,21 @@ def timetable_connect(updater: Updater) -> None:
     dispatcher = updater.dispatcher
     dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(callback_query_handler)
+    dispatcher.add_handler(get_dates_handler)
 
 
 # handlers
 
-start_handler = CommandHandler("start", start)
 callback_query_handler = CallbackQueryHandler(callback=calendar_date_callback)
 get_dates_handler = CommandHandler("get_dates", get_dates)
 conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("timetable", timetable_script)],
+    # ПРИМЕЧАНИЕ: MessageHandler Перекрывает все остальные слушатели к хуям, поэтому его нельзя юзать.
+    # entry_points=[MessageHandler(Filters.text & (~Filters.command), timetable_script_begin)],
+    entry_points=[CommandHandler("timetable", timetable_script_begin)],
     states={
-        "timetable_script": [CommandHandler("timetable", timetable_script)],
         "timetable_admin_menu": [MessageHandler(Filters.text & (~Filters.command), timetable_admin_menu_choice)],
+        "timetable_admin_menu_settings": [MessageHandler(Filters.text & (~Filters.command),
+                                                         timetable_admin_menu_settings)],
         "month_choosing": [MessageHandler(Filters.text & (~Filters.command), month_choosing)],
         "day_choosing": [MessageHandler(Filters.text & (~Filters.command), day_choosing)],
         "time_choosing": [MessageHandler(Filters.text & (~Filters.command), time_choosing)]
@@ -213,7 +206,6 @@ conv_handler = ConversationHandler(
 def main() -> None:
     updater = Updater(token=TOKEN, use_context=True)
     # Commands:
-    updater.dispatcher.add_handler(start_handler)
     updater.dispatcher.add_handler(get_dates_handler)
     # =========
     timetable_connect(updater)

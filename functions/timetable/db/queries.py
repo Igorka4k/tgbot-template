@@ -82,6 +82,8 @@ def clear_appointments(connection):
 
 
 # place for query tests:
-# from functions.timetable.tools import db_connect
+from functions.timetable.tools import db_connect
 
-# connection = db_connect()
+connection = db_connect()
+
+clear_appointments(connection)
