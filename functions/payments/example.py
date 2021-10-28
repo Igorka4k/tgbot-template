@@ -14,6 +14,8 @@ from os import environ
 
 from base_template.keyboards import INVOICE_EDITOR_KEYBOARD
 
+from functions.payments.table.queries import get_data, db_connect
+
 BACK = '<<'
 FORWARD = '>>'
 MORE = 'Подробнее'
@@ -22,16 +24,6 @@ INVOICE_BACK = '<<<'
 INVOICE_FORWARD = '>>>'
 DELETE = 'Удалить'
 EDIT = 'Изменить'
-
-
-def get_data():
-    """return data from somewhere"""
-    # return ['1/4', '2/4', '3/4', '4/4']
-    # return ['1/4']
-    return []
-
-
-data = get_data()
 
 
 def generate_keyboard():
@@ -58,6 +50,8 @@ def show_carousel(update: Update, ctx: CallbackContext) -> None:
         ctx.user_data["carousel_index"] = 0
     chat_id = update.message.chat_id
 
+    data = get_data(db_connect())
+
     if len(data) == 0:
         ctx.bot.send_message(chat_id=chat_id,
                              text="Товары в магазине закончились. Ждём новых поставок.\n"
@@ -67,11 +61,11 @@ def show_carousel(update: Update, ctx: CallbackContext) -> None:
     index = ctx.user_data["carousel_index"] % len(data)
 
     if len(data) == 1:
-        ctx.bot.send_message(chat_id=chat_id, text=str(data[index]),
+        ctx.bot.send_message(chat_id=chat_id, text=str(data[index]['long_description']),
                              reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(MORE, callback_data=MORE)]],
                                                                resize_keyboard=True))
     else:
-        ctx.bot.send_message(chat_id=chat_id, text=str(data[index]),
+        ctx.bot.send_message(chat_id=chat_id, text=str(data[index]['long_description']),
                              reply_markup=InlineKeyboardMarkup(generate_keyboard(),
                                                                resize_keyboard=True))
 
@@ -81,62 +75,60 @@ def keyboard_callback_handler(update: Update, ctx: CallbackContext) -> None:
     query = update.callback_query
     query_data = query.data
 
+    data = get_data(db_connect())
+
     if "carousel_index" not in ctx.user_data:
         ctx.user_data["carousel_index"] = 0
 
     if query_data == MORE:
         query.delete_message()
-        create_invoice(update, ctx, query.message.chat_id)
+        create_invoice(update, ctx, data[ctx.user_data["carousel_index"]], query.message.chat_id)
 
     elif query_data == FORWARD:
         ctx.user_data["carousel_index"] += 1
         ctx.user_data["carousel_index"] %= len(data)
-        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]),
+        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]['long_description']),
                                 reply_markup=InlineKeyboardMarkup(generate_keyboard()))
 
     elif query_data == BACK:
         ctx.user_data["carousel_index"] -= 1
         ctx.user_data["carousel_index"] %= len(data)
-        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]),
+        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]['long_description']),
                                 reply_markup=InlineKeyboardMarkup(generate_keyboard()))
 
     elif query_data == INVOICE_FORWARD:
         ctx.user_data["carousel_index"] += 1
         ctx.user_data["carousel_index"] %= len(data)
-        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]),
+        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]['long_description']),
                                 reply_markup=InlineKeyboardMarkup(generate_invoice_keyboard()))
 
     elif query_data == INVOICE_BACK:
         ctx.user_data["carousel_index"] -= 1
         ctx.user_data["carousel_index"] %= len(data)
-        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]),
+        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]['long_description']),
                                 reply_markup=InlineKeyboardMarkup(generate_invoice_keyboard()))
 
-    elif query_data == DELETE:
-        query.delete_message()
-        create_invoice(update, ctx, query.message.chat_id)
+    # elif query_data == DELETE:
+    #     query.delete_message()
+    #     create_invoice(update, ctx, query.message.chat_id)
+    #
+    # elif query_data == EDIT:
+    #     query.delete_message()
+    #     create_invoice(update, ctx, query.message.chat_id)
 
-    elif query_data == EDIT:
-        query.delete_message()
-        create_invoice(update, ctx, query.message.chat_id)
 
-
-def create_invoice(update: Update, ctx: CallbackContext, chat_id=None) -> None:
+def create_invoice(update: Update, ctx: CallbackContext, invoice_data, chat_id=None) -> None:
     """Sends an invoice"""
     if chat_id is None:
         chat_id = update.message.chat_id
-    title = "Это тестовый платёж (ВВОДИТЕ ТОЛ"
-    description = "Это тестовый платёж (ВВОДИТЕ ТОЛЬКО ТЕСТОВЫЕ ДАННЫЕ)" \
-                  " 294860836708367846823864807086780208687020867280473067880" \
-                  "36702360872807438067082687087234688236702846708247680246708827" \
-                  "6807248028046702867 qeribnaobniaosrnbaiwrbnjrisnbirpsnbonnirrbihn" \
-                  "RKBHHwourhboHRWBUO"
-    print(description.__len__(), title.__len__())
-    payload = "Оплата через бота №XXX"
+    title = invoice_data['title']
+    description = invoice_data['description']
+
+    payload = invoice_data['payload']
     provider_token = environ.get('BOT_PAYMENT_TOKEN')
     currency = "RUB"
-    price = 1000000
-    prices = [LabeledPrice("Сертификат", price * 100)]
+    price = invoice_data['price']
+    prices = [LabeledPrice(title, price * 100)]
 
     # optionally pass need_name=True, need_phone_number=True,
     # need_email=True, need_shipping_address=True, is_flexible=True
@@ -155,12 +147,12 @@ def create_invoice(update: Update, ctx: CallbackContext, chat_id=None) -> None:
 
 def precheckout_callback(update: Update, ctx: CallbackContext) -> None:
     query = update.pre_checkout_query
-    if query.invoice_payload != "Оплата через бота №XXX":
-        query.answer(ok=False, error_message="Кажется, что-то пошло не так...")
-        update.message.reply_text("Возникла ошибка при выполнении платежа.\n"
-                                  "Техническая поддержка: +79123456789")
-    else:
-        query.answer(ok=True)
+    # if query.invoice_payload != "Оплата через бота №XXX":
+    #     query.answer(ok=False, error_message="Кажется, что-то пошло не так...")
+    #     update.message.reply_text("Возникла ошибка при выполнении платежа.\n"
+    #                               "Техническая поддержка: +79123456789")
+    # else:
+    query.answer(ok=True)
 
 
 def successful_payment_callback(update: Update, ctx: CallbackContext) -> None:
