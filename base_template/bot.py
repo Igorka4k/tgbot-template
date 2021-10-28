@@ -1,21 +1,13 @@
 from os import environ, path
 from dotenv import load_dotenv
+from telegram.ext import CommandHandler, ConversationHandler, MessageHandler, Filters, Updater, CallbackQueryHandler
+from telegram import *
 
-from base_template.constants import *
-from base_template.keyboards import *
-from base_template.exceptions import *
-
-from functions.timetable.tools import CalendarCog
+from functions.payments.example import keyboard_callback_handler, show_carousel
+from functions.timetable.tools import db_connect
 from functions.timetable.db import queries
-from functions.timetable.example import timetable_connect
-from functions.timetable.example import start as timetable_start
 
-from functions.payments.example import payment_connect, pay_carousel_connect
-
-from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler
-from telegram import ReplyKeyboardMarkup
-
-import json
+from base_template.keyboards import INVOICE_EDITOR_KEYBOARD, MAIN_MENU_KEYBOARD__admin, MAIN_MENU_KEYBOARD__user
 
 if path.exists('../.env'):  # Переменные окружения хранятся в основной директории проекта
     load_dotenv('../.env')
@@ -24,18 +16,8 @@ else:
 
 ADMIN_CHAT = list(map(int, environ.get('ADMIN_CHAT').split(',')))
 
-updater = Updater(token=environ.get('BOT_TOKEN'), use_context=True)  # bot create.
-
 
 def start(update, ctx):
-    """greeting"""
-    from functions.timetable.tools import db_connect
-    # короче надо будет как то сохранить инфу о том кто подписан на бота и проявляет активность,
-    # у сущика уже есть идеи, можно побазарить как-нибудь, но пока тока запись о том что пользователь когда-то писал
-    # /start, в ctx.user_data:
-    # ctx.user_data initialization:
-    # ПРИМЕЧАНИЕ: Пока что есть такой косяк, что user_data сбрасывается при перезапуске бота,
-    # тупо потому что он обнуляет ctx при перезапуске, поэтому при запуске сначала надо писать /start.
     ctx.user_data["is_authorized"] = True
     ctx.user_data["username"] = update.message.from_user["username"]
     ctx.user_data["is_admin"] = True if update.effective_chat.id in ADMIN_CHAT else False
@@ -43,116 +25,133 @@ def start(update, ctx):
         ctx.user_data["full_name"] = "Аноним"
     else:
         ctx.user_data["full_name"] = update.message.from_user["full_name"]
+
     connection = db_connect()
+
+    text = ""
+
     if not queries.is_authorized(connection, update.message.from_user["username"]):
         queries.new_user_adding(connection, ctx.user_data["full_name"], ctx.user_data["username"])
+        text += "Добро пожаловать к нам в бота!!!\n"
     else:
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы уже авторизованы, я вас запомнил.")
+        text += "Вы уже авторизованы, я вас запомнил.\n"
+    text += "Вы находитесь в главном меню."
 
-    # /start не может быть entry_point`ом в диалоге, поэтому просим начать диалог через отдельную команду /menu:
-    keyboard = ReplyKeyboardMarkup([["/menu"]], resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id,
-                         text=f'Приветствую, {ctx.user_data["username"]},'
-                              f' для использования бота нажмите на кнопку перехода в меню.',
-                         reply_markup=keyboard)
+    if ctx.user_data["is_admin"]:
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=ReplyKeyboardMarkup(
+            MAIN_MENU_KEYBOARD__admin, resize_keyboard=True))
+    else:
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=ReplyKeyboardMarkup(
+            MAIN_MENU_KEYBOARD__user, resize_keyboard=True))
+
+    return 'menu'
 
 
 def menu(update, ctx):
-    """main menu"""
-    if ctx.user_data["is_admin"]:
-        keyboard = ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__admin, resize_keyboard=True)
-    else:
-        keyboard = ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__user, resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы находитесь в главном меню бота.",
-                         reply_markup=keyboard)
-    return "service_choosing"
-
-
-def service_choosing(update, ctx):
     msg = update.message.text
 
-    if ctx.user_data["is_admin"]:
-        if msg == "Онлайн-запись":
-            return timetable_start(update, ctx)  # меню админа по онлайн-записям.
-        if msg == "Сертификаты (редактирование позиций)":
-            return certificate_script(update, ctx)
-        if msg == "Рассылка спец. предложений":
-            return notifies_script(update, ctx)
-        return "service_choosing"
+    if msg == "Онлайн-запись":
+        if ctx.user_data["is_admin"]:
+            pass
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Онлайн-запись (answer)",
+                             reply_markup=ReplyKeyboardMarkup([["Заглушка", "Заглушка"],
+                                                               ["<< Назад в меню"]], resize_keyboard=True))
+        return 'online_appointment'
 
-    elif not ctx.user_data["is_admin"]:
-        if msg == "Онлайн-запись":
-            # return timetable_admin_menu(update, ctx)
-            return timetable_start(update, ctx)
-        if msg == "Сертификаты":
-            return certificate_script(update, ctx)
+    if msg == "Сертификаты":
+        if ctx.user_data["is_admin"]:
+            ctx.bot.send_message(chat_id=update.message.chat_id,
+                                 text="Добро пожаловать в редактор витрины Вашего магазина!\n\n"
+                                      "Выберите один из вариантов ниже.",
+                                 reply_markup=ReplyKeyboardMarkup(INVOICE_EDITOR_KEYBOARD,
+                                                                  resize_keyboard=True))
+            return 'certificates'
+        else:
+            ctx.bot.send_message(chat_id=update.message.chat_id,
+                                 text="Добро пожаловать в наш магазин сертификатов!\n\nНаши товары:",
+                                 reply_markup=ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__user, resize_keyboard=True))
+
+            show_carousel(update, ctx)
+            return 'menu'
+
+    if msg == "Рассылка спец. предложений":
+        if ctx.user_data["is_admin"]:
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Pass")
+            return 'menu'
+    return 'menu'
 
 
-def notifies_script(update, ctx):
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут можно будет отправить рассылку.")
-    return menu(update, ctx)
+def online_appointment(update, ctx):
+    msg = update.message.text
+    if msg == "<< Назад в меню":
 
+        if ctx.user_data["is_admin"]:
+            keyboard = MAIN_MENU_KEYBOARD__admin
+        else:
+            keyboard = MAIN_MENU_KEYBOARD__user
 
-def certificate_script(update, ctx):
-    if ctx.user_data["is_admin"]:
-        msg_to_send = "Тут можно будет продать сертификаты."
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы вернулись в главное меню.",
+                             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+        return 'menu'
+
     else:
-        msg_to_send = "Тут можно будет купить сертификаты."
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text=msg_to_send)
-    return menu(update, ctx)
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Это заглушка, еблан.")
+
+    return 'online_appointment'
 
 
-def command_list(update, ctx):
-    """help command list"""
-    with open(CMD_LIST_PATH, "r", encoding="utf-8") as file:
-        all_the_commands = json.load(file)
-        formatting_commands = "\n\n".join([f"/{key} - {val.capitalize()}." for key, val in all_the_commands.items()])
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text=formatting_commands)
+def certificates_admin(update, ctx):
+    msg = update.message.text
+    if msg == "<< Назад в меню":
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы вернулись в главное меню.",
+                             reply_markup=ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__admin, resize_keyboard=True))
+        return 'menu'
+    else:
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Сюда функционал ещё не завезли")
+    return 'certificates'
 
 
 def stop(update, ctx):
-    """dialog breaking"""
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы принудительно вернулись в главное меню.")
-    return menu(update, ctx)
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Stopped", reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
 
 
 def unknown(update, ctx):
     """unknown command chat-exception"""
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Неизвестная команда, нажмите сюда ==> /help")
+    # ctx.bot.send_message(chat_id=update.effective_chat.id, text="Неизвестная команда, нажмите сюда ==> /help")
+    """Ignoring"""
+    pass
 
 
-dispatcher = updater.dispatcher  # dispatcher object, which manages all the handlers and something..
-
-# Handlers
 start_handler = CommandHandler("start", start)
-main_menu_handler = CommandHandler("menu", menu)
-help_handler = CommandHandler("help", command_list)
 stop_handler = CommandHandler("stop", stop)
+unknown_handler = MessageHandler(Filters.command, unknown)
+
 main_menu_conv_handler = ConversationHandler(
-    entry_points=[main_menu_handler],
+    entry_points=[start_handler],
     states={
-        "service_choosing": [MessageHandler(Filters.text & (~Filters.command), service_choosing)],
-        "certificate_script": [MessageHandler(Filters.text & (~Filters.command), certificate_script)],
-        "notifies_script": [MessageHandler(Filters.text & (~Filters.command), notifies_script)],
+        "menu": [MessageHandler(
+            Filters.regex('^(Онлайн-запись|Сертификаты|Рассылка спец. предложений)$') & (~Filters.command), menu)],
+        "online_appointment": [
+            MessageHandler(Filters.regex('^(Заглушка|<< Назад в меню)$') & (~Filters.command), online_appointment)],
+        "certificates": [
+
+            MessageHandler(Filters.regex(
+                '^(Добавление позиции|Изменение позиции|Удаление позиции|Просмотр позиций|<< Назад в меню)$')
+                           & (~Filters.command), certificates_admin)
+
+        ]
     },
     fallbacks=[stop_handler]
 )
 
-unknown_handler = MessageHandler(Filters.command, unknown)
+updater = Updater(token=environ.get('BOT_TOKEN'), use_context=True)
+dispatcher = updater.dispatcher
 
-# Dispatcher adding !!!ПРЕВОСХОДСТВО СЛУШАТЕЛЯ ЗАВИСИТ ОТ МОМЕНТА ЕГО ДОБАВЛЕНИЯ В ДИСПЕТЧЕР!!!
-# ---1 level---
-dispatcher.add_handler(start_handler)
-# ---2 level---
 dispatcher.add_handler(main_menu_conv_handler)
-dispatcher.add_handler(help_handler)
 
-# external modules connection:
-payment_connect(updater)
-pay_carousel_connect(updater)
-timetable_connect(updater)
+dispatcher.add_handler(CallbackQueryHandler(callback=keyboard_callback_handler, pass_chat_data=True))
 
-# ---3 level---
 dispatcher.add_handler(unknown_handler)
 
 if __name__ == "__main__":
