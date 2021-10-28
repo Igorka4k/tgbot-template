@@ -1,8 +1,8 @@
 import pymysql
 from os import environ, path
 
-from dotenv import load_dotenv
-
+# from dotenv import load_dotenv
+#
 # if path.exists('../../../.env'):  # Переменные окружения хранятся в основной директории проекта
 #     load_dotenv('../../../.env')
 # else:
@@ -119,7 +119,3 @@ def get_invoice(connection, id_: int):
             print("invoice got...")
             result = cursor.fetchone()
             return result
-
-
-connection = db_connect()
-data = get_data(connection)
