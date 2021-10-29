@@ -1,4 +1,5 @@
 """Basic example for a bot that can receive payment from user."""
+from pprint import pprint
 
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram import Update
@@ -9,6 +10,8 @@ from telegram.ext import CallbackContext
 from telegram.ext import Filters
 from telegram.ext import MessageHandler
 from telegram.ext import Updater
+
+from telegram.error import BadRequest
 
 from os import environ
 
@@ -59,15 +62,15 @@ def show_carousel(update: Update, ctx: CallbackContext) -> None:
         return
 
     index = ctx.user_data["carousel_index"] % len(data)
+    text = data[index]['long_description'].replace('\\n', '\n')
 
     if len(data) == 1:
-        ctx.bot.send_message(chat_id=chat_id, text=str(data[index]['long_description']),
+        ctx.bot.send_message(chat_id=chat_id, text=text,
                              reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(MORE, callback_data=MORE)]],
                                                                resize_keyboard=True))
     else:
-        ctx.bot.send_message(chat_id=chat_id, text=str(data[index]['long_description']),
-                             reply_markup=InlineKeyboardMarkup(generate_keyboard(),
-                                                               resize_keyboard=True))
+        ctx.bot.send_message(chat_id=chat_id, text=text, reply_markup=InlineKeyboardMarkup(generate_keyboard(),
+                                                                                           resize_keyboard=True))
 
 
 def keyboard_callback_handler(update: Update, ctx: CallbackContext) -> None:
@@ -77,36 +80,42 @@ def keyboard_callback_handler(update: Update, ctx: CallbackContext) -> None:
 
     data = get_data(db_connect())
 
+    query.answer()
+
     if "carousel_index" not in ctx.user_data:
         ctx.user_data["carousel_index"] = 0
 
     if query_data == MORE:
         query.delete_message()
         create_invoice(update, ctx, data[ctx.user_data["carousel_index"]], query.message.chat_id)
+        return
 
-    elif query_data == FORWARD:
-        ctx.user_data["carousel_index"] += 1
-        ctx.user_data["carousel_index"] %= len(data)
-        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]['long_description']),
-                                reply_markup=InlineKeyboardMarkup(generate_keyboard()))
+    text = data[ctx.user_data["carousel_index"]]['long_description'].replace('\\n', '\n')
 
-    elif query_data == BACK:
-        ctx.user_data["carousel_index"] -= 1
-        ctx.user_data["carousel_index"] %= len(data)
-        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]['long_description']),
-                                reply_markup=InlineKeyboardMarkup(generate_keyboard()))
+    try:
 
-    elif query_data == INVOICE_FORWARD:
-        ctx.user_data["carousel_index"] += 1
-        ctx.user_data["carousel_index"] %= len(data)
-        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]['long_description']),
-                                reply_markup=InlineKeyboardMarkup(generate_invoice_keyboard()))
+        if query_data == FORWARD:
+            ctx.user_data["carousel_index"] += 1
+            ctx.user_data["carousel_index"] %= len(data)
+            query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(generate_keyboard()))
 
-    elif query_data == INVOICE_BACK:
-        ctx.user_data["carousel_index"] -= 1
-        ctx.user_data["carousel_index"] %= len(data)
-        query.edit_message_text(text=str(data[ctx.user_data["carousel_index"]]['long_description']),
-                                reply_markup=InlineKeyboardMarkup(generate_invoice_keyboard()))
+        elif query_data == BACK:
+            ctx.user_data["carousel_index"] -= 1
+            ctx.user_data["carousel_index"] %= len(data)
+            query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(generate_keyboard()))
+
+        elif query_data == INVOICE_FORWARD:
+            ctx.user_data["carousel_index"] += 1
+            ctx.user_data["carousel_index"] %= len(data)
+            query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(generate_invoice_keyboard()))
+
+        elif query_data == INVOICE_BACK:
+            ctx.user_data["carousel_index"] -= 1
+            ctx.user_data["carousel_index"] %= len(data)
+            query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(generate_invoice_keyboard()))
+
+    except BadRequest:
+        pass
 
     # elif query_data == DELETE:
     #     query.delete_message()
