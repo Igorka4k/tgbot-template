@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 from base_template.constants import *
 from base_template.keyboards import *
-from base_template.exceptions import *
+from base_template.decorators import *
 
 from functions.timetable.tools import CalendarCog
 from functions.timetable.db import queries

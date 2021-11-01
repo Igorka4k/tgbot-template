@@ -32,6 +32,14 @@ def get_data(connection):
         return f"Кол-во записей: {count}\n\n" + '\n\n'.join(formatting_data)
 
 
+def get_user_last_date(connection, tg_account):
+    with connection.cursor() as cursor:
+        check = f"SELECT * FROM online_dates WHERE `tg_account` = '{tg_account}'"
+        cursor.execute(check)
+        last_date = cursor.fetchone()
+        return last_date
+
+
 def is_authorized(connection, tg_account):
     """ does the user exist in db? """
     with connection.cursor() as cursor:
@@ -63,11 +71,11 @@ def new_user_adding(connection, full_name, tg_account):
         print("new user added...")
 
 
-def delete_appointment(connection, full_name, tg_account):
+def delete_appointment(connection, tg_account):
     with connection.cursor() as cursor:
         try:
-            delete_query = f"DELETE FROM `online_dates` WHERE (`name` = '{full_name}' AND `tg_account` = '{tg_account}'" \
-                           f" AND`id` = 1);"
+            delete_query = f"DELETE FROM `online_dates` " \
+                           f"WHERE (`tg_account` = '{tg_account}');"
             cursor.execute(delete_query)
             connection.commit()
         except Exception as ex:
@@ -80,10 +88,15 @@ def clear_appointments(connection):
         cursor.execute(clear_query)
         connection.commit()
 
-
 # place for query tests:
-from functions.timetable.tools import db_connect
-
-connection = db_connect()
-
-clear_appointments(connection)
+# from functions.timetable.tools import db_connect
+# from os import environ, path
+# from dotenv import load_dotenv
+#
+# if path.exists('../../../.env'):  # Переменные окружения хранятся в основной директории проекта
+#     load_dotenv('../../../.env')
+# else:
+#     raise ImportError("Can't import environment variables")
+#
+# connection = db_connect()
+# clear_appointments(connection)
