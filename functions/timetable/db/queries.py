@@ -4,10 +4,8 @@ def table_create(connection, title):
         try:
             table_create_query = f"CREATE TABLE `{title}` (" \
                                  "`id` int auto_increment," \
-                                 "`full_name` varchar(32) NOT NULL," \
-                                 "`tg_account` varchar(32) NOT NULL," \
-                                 "`address` varchar(255) NULL," \
-                                 "`phone` varchar(32) NULL," \
+                                 "`begin` varchar(32) NOT NULL," \
+                                 "`end` varchar(32) NOT NULL," \
                                  "PRIMARY KEY  (`id`));"
             cursor.execute(table_create_query)
             connection.commit()
@@ -18,8 +16,8 @@ def table_create(connection, title):
 
 def get_data(connection):
     with connection.cursor() as cursor:  # Поработать над форматом вывода информации о клиентах, чтобы было красиво.
-        check = "SELECT * FROM online_dates"
-        cursor.execute(check)
+        get_data_query = "SELECT * FROM online_dates"
+        cursor.execute(get_data_query)
         rows = cursor.fetchall()
         count = len(rows)
         formatting_data = []
@@ -34,10 +32,21 @@ def get_data(connection):
 
 def get_user_last_date(connection, tg_account):
     with connection.cursor() as cursor:
-        check = f"SELECT * FROM online_dates WHERE `tg_account` = '{tg_account}'"
-        cursor.execute(check)
+        get_users_query = f"SELECT * FROM online_dates WHERE `tg_account` = '{tg_account}'"
+        cursor.execute(get_users_query)
         last_date = cursor.fetchone()
         return last_date
+
+
+def working_time_adding(connection, begin_time, end_time):
+    with connection.cursor() as cursor:
+        clear_query = "DELETE FROM `working_hours` WHERE id"
+        cursor.execute(clear_query)
+        adding_query = f"INSERT INTO `working_hours` (begin, end)" \
+                       f" VALUES ('{begin_time}', '{end_time}');"
+        cursor.execute(adding_query)
+        connection.commit()
+        print("new working time set...")
 
 
 def is_authorized(connection, tg_account):
@@ -88,8 +97,10 @@ def clear_appointments(connection):
         cursor.execute(clear_query)
         connection.commit()
 
+
 # place for query tests:
 # from functions.timetable.tools import db_connect
+#
 # from os import environ, path
 # from dotenv import load_dotenv
 #
@@ -99,4 +110,3 @@ def clear_appointments(connection):
 #     raise ImportError("Can't import environment variables")
 #
 # connection = db_connect()
-# clear_appointments(connection)

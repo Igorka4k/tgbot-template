@@ -36,13 +36,21 @@ class CalendarCog:
         days_keyboard = [[str((d1 + datetime.timedelta(days=x)).day)] for x in range((d2 - d1).days)]
         return days_keyboard
 
-    def get_hours(self):
+    def get_hours_keyboard(self):
         # Бизнесу надо будет добавить возможность устанавливать нерабочие часы, например 20:00-10:00 + обед 13:30-14:00
         hours_keyboard = []
-        for i in range(2):
-            for hour in range(0, 24):
-                if i == 0:
-                    hours_keyboard.append([f"{str(hour)}:00"])
-                else:
-                    hours_keyboard.append([f"{str(hour)}:30"])
-        return sorted(hours_keyboard, key=lambda x: [int(x[0].split(":")[0]), int(x[0].split(":")[1])])
+        one_hour = datetime.timedelta(minutes=0)
+
+        for i in range(0, 24 * 2):
+            total_seconds = int(one_hour.total_seconds())
+            hours, remainder = divmod(total_seconds, 60 * 60)
+            minutes, seconds = divmod(remainder, 60)
+
+            hours_keyboard.append([datetime.time(hours, minutes, 0).strftime("%H:%M")])
+            one_hour = one_hour + datetime.timedelta(minutes=30)
+        return hours_keyboard
+
+
+# cog = CalendarCog()
+# result = cog.get_hours_keyboard()
+# print(result)

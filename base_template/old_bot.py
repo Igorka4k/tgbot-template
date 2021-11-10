@@ -1,3 +1,7 @@
+
+
+# НЕ УДАЛЯТЬ НИ В КОЕМ ПОЖАРНОМ СЛУЧАЕ ЭТОТ ФАЙЛИЧЕК (тут ещё у чепи функционал)
+
 from os import environ, path
 from dotenv import load_dotenv
 

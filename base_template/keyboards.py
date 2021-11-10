@@ -1,28 +1,35 @@
 # main menu
-MAIN_MENU_KEYBOARD__user = [["Онлайн-запись"], ["Сертификаты"]]
+from functions.timetable.tools import CalendarCog
+from constants import *
 
-MAIN_MENU_KEYBOARD__admin = [["Онлайн-запись"],
-                             ["Сертификаты"],
+MAIN_MENU_KEYBOARD__user = [[online_timetable_btn], [certificates_btn]]
+
+MAIN_MENU_KEYBOARD__admin = [[online_timetable_btn],
+                             [certificates_btn],
                              ["Рассылка спец. предложений"]]
 
 INVOICE_EDITOR_KEYBOARD = [["Добавление позиции", "Изменение позиции", "Удаление позиции"],
-                           ["Просмотр позиций", "<< Назад в меню"]]
+                           ["Просмотр позиций", back_to_menu_btn]]
 
 # online-appointments
 MONTH_CHOOSING_KEYBOARD = [["(текущий месяц)"], ["январь"], ["февраль"], ["март"], ["апрель"],
                            ["май"], ["июнь"], ["июль"], ["август"],
-                           ["сентябрь"], ["октябрь"], ["ноябрь"], ["декабрь"], ["<< Назад в меню"]]
+                           ["сентябрь"], ["октябрь"], ["ноябрь"], ["декабрь"], [back_to_menu_btn]]
 
-ONLINE_TIMETABLE_admin_menu = [["Текущие записи"], ["Настройки"], ["<< Назад в меню"]]
+ONLINE_TIMETABLE_admin_menu = [[check_appointments_btn], [settings_btn], [back_to_menu_btn]]
 
-ONLINE_TIMETABLE_user_menu = [["Записаться"], ["Инфо моей записи", "Отменить запись"], ["<< Назад в меню"]]
+ONLINE_TIMETABLE_user_menu = [[make_appointment_btn], [appointment_info_btn, cancel_appointment_btn],
+                              [back_to_menu_btn]]
 
-ONLINE_TIMETABLE_SETTINGS = [["Диапазон", "Часы работы", "Выходные", "Отпуск"],
-                             ["<< Назад"]]
+ONLINE_TIMETABLE_SETTINGS = [[timetable_range_btn, working_hours_btn, weekends_btn, holidays_btn],
+                             [back_btn]]
 
-TIMETABLE_DURATION = [["3 месяца вперёд"], ["Месяц вперёд"], ["Год вперёд"], ["<< Назад"]]
+ONLINE_TIMETABLE_HOURS = CalendarCog().get_hours_keyboard()
+
+TIMETABLE_DURATION = [["3 месяца вперёд"], ["Месяц вперёд"], ["Год вперёд"], [back_btn]]
 
 
 # Служебные клавы
-PASS_KEYBOARD = [["Заглушка", "Заглушка"], ["<< Назад в меню"]]
-CANCEL_KEYBOARD = [["<< Назад в меню"]]
+PASS_KEYBOARD = [[pass_btn, pass_btn], [back_to_menu_btn]]
+CANCEL_KEYBOARD = [[back_to_menu_btn]]
+YES_NO_KEYBOARD = [[agreement_btn, disagreement_btn]]

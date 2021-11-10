@@ -1,5 +1,8 @@
 # Тут необходимо будет прописать декораторы, которые будут обрабатывать непродуманные сценарии,
 # например прерывать диалог, когда пользователь уходит из него коммандой /start к примеру.
+from telegram import ReplyKeyboardMarkup
+
+from base_template.keyboards import ONLINE_TIMETABLE_admin_menu, ONLINE_TIMETABLE_user_menu
 
 
 def only_admin(func):
@@ -36,6 +39,11 @@ def only_table_values(func, collection=None, keyboard_type=None):
 
     def time_type(update, ctx):
         msg = update.message.text.lower()
+        if msg == "<< назад в меню":
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Пока невозможно вернуться во время записи.")
+                                 # reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
+            # return 'online_appointment'
+            return
         if msg not in [i[0].lower() for i in collection]:
             ctx.bot.send_message(chat_id=update.effective_chat.id,
                                  text="Ошибка, выберите предложенный вариант.")

@@ -1,5 +1,6 @@
-from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler,\
+    CallbackQueryHandler
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from base_template.keyboards import *
 from functions.timetable.tools import *
 from base_template.decorators import *
@@ -7,7 +8,6 @@ from functions.timetable.db import queries
 import datetime as dt
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from os import environ
-
 import functools
 
 
@@ -24,9 +24,10 @@ def timetable_script_begin(update, ctx):
     # return "month_choosing"
 
     # calendar version:
-    # if ctx.user_data["is_admin"]:
-    #     return timetable_admin_menu(update, ctx)
-    return calendar_script(update, ctx)
+    # return calendar_script(update, ctx)
+
+    # authors calendar version:
+    return new_calendar_script(update, ctx)
 
 
 def stop(update, ctx):
@@ -34,6 +35,22 @@ def stop(update, ctx):
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="Действие отменено.",
                          reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
+
+
+def new_calendar_script(update, ctx):
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("test btn", callback_data="its test")]
+    ])
+    ctx.bot.send_message(chat_id=update.effective_chat.id,
+                         text="test",
+                         reply_markup=keyboard)
+    print("ok")
+
+
+def new_calendar_callback(update, ctx):
+    query = update.callback_query
+    data = query.data
+    query.edit_message_text(text="good", parse_mode=ParseMode.MARKDOWN)
 
 
 def calendar_script(update, ctx):
@@ -62,7 +79,7 @@ def calendar_date_callback(update, ctx):
         ctx.user_data["date_of_appointment"].extend([year, month, day])  # (Порядок: год-месяц-день)
 
         # time_choosing redirect:
-        keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours(), resize_keyboard=True)
+        keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(), resize_keyboard=True)
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Выберите теперь время.", reply_markup=keyboard)
         ctx.user_data["is_date_choice"] = True
         return "time_choosing"
@@ -91,17 +108,13 @@ def get_dates(update, ctx):
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"{queries.get_data(connection)}")
 
 
-def timetable_admin_menu(update, ctx):
-    keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu, resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Тут будет запись на приём.", reply_markup=keyboard)
-    return "timetable_admin_menu"
-
-
 @functools.partial(only_table_values, collection=MONTH_CHOOSING_KEYBOARD, keyboard_type="month")
 def month_choosing(update, ctx):
     msg = update.message.text
-    if msg == "_назад_":
-        return timetable_script_begin(update, ctx)
+    if msg == "<< Назад в меню":
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы вернулись в меню онлайн-записей.",
+                             reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu, resize_keyboard=True))
+        return 'online_appointment'
     word_to_num = {
         "(текущий месяц)": dt.datetime.now().month,
         "январь": 1,
@@ -130,18 +143,26 @@ def month_choosing(update, ctx):
 @functools.partial(only_table_values, keyboard_type="day")
 def day_choosing(update, ctx):
     msg = update.message.text
+    if msg == "<< Назад в меню":
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы вернулись в меню онлайн-записей.",
+                             reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu, resize_keyboard=True))
+        return 'online_appointment'
     ctx.user_data["date_of_appointment"].append(msg)
-    keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours(), resize_keyboard=True)
+    keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(), resize_keyboard=True)
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Выберите теперь время.", reply_markup=keyboard)
     return "time_choosing"
 
 
 # метод partial позволяет передавать параметры в декоратор.
-@functools.partial(only_table_values, collection=CalendarCog().get_hours(), keyboard_type="time")
+@functools.partial(only_table_values, collection=ONLINE_TIMETABLE_HOURS, keyboard_type="time")
 def time_choosing(update, ctx):
+    msg = update.message.text
+    if msg == "<< Назад в меню":
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы вернулись в меню онлайн-записей.",
+                             reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu, resize_keyboard=True))
+        return 'online_appointment'
     if not ctx.user_data["is_date_choice"]:
         return "time_choosing"
-    msg = update.message.text
     ctx.user_data["date_of_appointment"].append(msg)
 
     # ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Запись оформлена.",
@@ -170,13 +191,16 @@ def timetable_script_finish(update, ctx):
 def timetable_connect(updater: Updater) -> None:
     """Adds required handlers"""
     dispatcher = updater.dispatcher
-    dispatcher.add_handler(callback_query_handler)
+    # dispatcher.add_handler(callback_query_handler)
     dispatcher.add_handler(get_dates_handler)
+    dispatcher.add_handler(new_calendar_callback_query_handler)
 
 
 # handlers
 
-callback_query_handler = CallbackQueryHandler(callback=calendar_date_callback)
+
+new_calendar_callback_query_handler = CallbackQueryHandler(callback=new_calendar_callback)
+# callback_query_handler = CallbackQueryHandler(callback=calendar_date_callback)
 get_dates_handler = CommandHandler("get_dates", get_dates)  # возможность узнать текущие записи через команду
 
 
