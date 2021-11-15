@@ -26,8 +26,9 @@ ONLINE_TIMETABLE_SETTINGS = [[timetable_range_btn, working_hours_btn, weekends_b
 
 ONLINE_TIMETABLE_HOURS = CalendarCog().get_hours_keyboard()
 
-TIMETABLE_DURATION = [["3 месяца вперёд"], ["Месяц вперёд"], ["Год вперёд"], [back_btn]]
+TIMETABLE_DURATION = [[week_range_btn], [one_month_range_btn], [three_month_range_btn], [year_range_btn], [back_btn]]
 
+HOLIDAYS_MENU = [[holidays_menu_set_btn], [holidays_menu_info_btn, holidays_menu_cancel_btn], [back_btn]]
 
 # Служебные клавы
 PASS_KEYBOARD = [[pass_btn, pass_btn], [back_to_menu_btn]]

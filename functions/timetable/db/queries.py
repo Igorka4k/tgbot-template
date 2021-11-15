@@ -1,11 +1,13 @@
+from functions.timetable.new_calendar.constants import weekdays_header_ru
+
+
 def table_create(connection, title):
     """table init"""
     with connection.cursor() as cursor:
         try:
             table_create_query = f"CREATE TABLE `{title}` (" \
                                  "`id` int auto_increment," \
-                                 "`begin` varchar(32) NOT NULL," \
-                                 "`end` varchar(32) NOT NULL," \
+                                 "`mode` varchar(32) NOT NULL," \
                                  "PRIMARY KEY  (`id`));"
             cursor.execute(table_create_query)
             connection.commit()
@@ -30,6 +32,14 @@ def get_data(connection):
         return f"Кол-во записей: {count}\n\n" + '\n\n'.join(formatting_data)
 
 
+def get_working_hours(connection):
+    with connection.cursor() as cursor:
+        get_working_hours_query = f"SELECT * FROM working_hours"
+        cursor.execute(get_working_hours_query)
+        working_hours = cursor.fetchone()
+        return working_hours
+
+
 def get_user_last_date(connection, tg_account):
     with connection.cursor() as cursor:
         get_users_query = f"SELECT * FROM online_dates WHERE `tg_account` = '{tg_account}'"
@@ -46,7 +56,115 @@ def working_time_adding(connection, begin_time, end_time):
                        f" VALUES ('{begin_time}', '{end_time}');"
         cursor.execute(adding_query)
         connection.commit()
-        print("new working time set...")
+        print("new working time has been set...")
+
+
+def set_timetable_range(connection, mode):
+    with connection.cursor() as cursor:
+        clear_query = "DELETE FROM `timetable_range` WHERE id"
+        cursor.execute(clear_query)
+        set_query = f"INSERT INTO `timetable_range` (mode)" \
+                    f" VALUES('{mode}');"
+        cursor.execute(set_query)
+        connection.commit()
+        print("new timetable_range has been set...")
+
+
+def get_timetable_range(connection):
+    with connection.cursor() as cursor:
+        query = "SELECT * FROM `timetable_range`"
+        cursor.execute(query)
+        timetable_range = cursor.fetchone()
+        return int(timetable_range["mode"])
+
+
+def set_days_off(connection, day):
+    with connection.cursor() as cursor:
+        choose_all_query = "SELECT * FROM `days_off`"
+        cursor.execute(choose_all_query)
+        all_the_weekdays = cursor.fetchall()
+        if not all_the_weekdays:
+            all_the_weekdays = {
+                "ПН": False,
+                "ВТ": False,
+                "СР": False,
+                "ЧТ": False,
+                "ПТ": False,
+                "СБ": False,
+                "ВС": False
+            }
+            all_the_weekdays[day] = not all_the_weekdays[day]
+            values = list()
+            for i in all_the_weekdays.values():
+                values.append(1) if i else values.append(0)
+        else:
+            abbr_to_month = {
+                "ПН": "monday",
+                "ВТ": "tuesday",
+                "СР": "wednesday",
+                "ЧТ": "thursday",
+                "ПТ": "friday",
+                "СБ": "saturday",
+                "ВС": "sunday"
+            }
+            all_the_weekdays[0][abbr_to_month[day]] = 1 if int(all_the_weekdays[0][abbr_to_month[day]]) == 0 else 0
+            print(all_the_weekdays)
+            values = []
+            for i in list(all_the_weekdays[0].values())[1:]:
+                values.append(1) if i else values.append(0)
+            clear_query = "DELETE FROM `days_off` WHERE id"
+            cursor.execute(clear_query)
+
+        adding_query = "INSERT INTO `days_off` (monday, tuesday, wednesday, thursday, friday, saturday, sunday) " \
+                       f"VALUES ('{values[0]}', '{values[1]}', '{values[2]}', '{values[3]}', '{values[4]}', " \
+                       f"'{values[5]}', '{values[6]}');"
+        cursor.execute(adding_query)
+        connection.commit()
+        return values
+
+
+def get_days_off(connection):
+    with connection.cursor() as cursor:
+        query = "SELECT * FROM `days_off`"
+        cursor.execute(query)
+        values = list(cursor.fetchall()[0].values())[1:]
+        days_off = [weekdays_header_ru[i] for i in range(len(weekdays_header_ru)) if values[i] == 1]
+        return days_off
+
+
+def set_holidays(connection, first_date, second_date):
+    with connection.cursor() as cursor:
+        clear_query = "DELETE FROM `holidays` WHERE id"
+        cursor.execute(clear_query)
+        query = "INSERT INTO `holidays` (begin_date, end_date) VALUES " \
+                f"('{first_date}', '{second_date}');"
+        cursor.execute(query)
+        connection.commit()
+        print("new holidays have been set..")
+
+
+def get_holidays(connection):
+    with connection.cursor() as cursor:
+        query = "SELECT * FROM `holidays`"
+        cursor.execute(query)
+        current_holidays = cursor.fetchone()
+        if current_holidays is None:
+            return None
+        return current_holidays
+
+
+def cancel_holidays(connection):
+    with connection.cursor() as cursor:
+        check_query = "SELECT * FROM `holidays`"
+        cursor.execute(check_query)
+        check = cursor.fetchone()
+        if check is None:
+            return None
+        clear_query = "DELETE FROM `holidays` WHERE id"
+        cursor.execute(clear_query)
+        connection.commit()
+        print("holidays have been canceled.")
+        return check
 
 
 def is_authorized(connection, tg_account):
@@ -97,7 +215,6 @@ def clear_appointments(connection):
         cursor.execute(clear_query)
         connection.commit()
 
-
 # place for query tests:
 # from functions.timetable.tools import db_connect
 #
@@ -110,3 +227,4 @@ def clear_appointments(connection):
 #     raise ImportError("Can't import environment variables")
 #
 # connection = db_connect()
+#

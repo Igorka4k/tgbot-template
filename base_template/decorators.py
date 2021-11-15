@@ -41,8 +41,6 @@ def only_table_values(func, collection=None, keyboard_type=None):
         msg = update.message.text.lower()
         if msg == "<< назад в меню":
             ctx.bot.send_message(chat_id=update.effective_chat.id, text="Пока невозможно вернуться во время записи.")
-                                 # reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
-            # return 'online_appointment'
             return
         if msg not in [i[0].lower() for i in collection]:
             ctx.bot.send_message(chat_id=update.effective_chat.id,
@@ -58,10 +56,30 @@ def only_table_values(func, collection=None, keyboard_type=None):
             return "month_choosing"
         return func(update, ctx)
 
+    def timetable_range_type(update, ctx):
+        msg = update.message.text.lower()
+        if msg not in [i[0].lower() for i in collection]:
+            ctx.bot.send_message(chat_id=update.effective_chat.id,
+                                 text="Ошибка, выберите предложенный вариант.")
+            return "timetable_range_choosing"
+        return func(update, ctx)
+
+    def weekends_type(update, ctx):
+        msg = update.message.text.lower()
+        if msg not in [i.lower() for i in collection]:
+            ctx.bot.send_message(chat_id=update.effective_chat.id,
+                                 text="Ошибка, выберите предложенный вариант.")
+            return "weekends_choosing"
+        return func(update, ctx)
+
     # type checking
     if keyboard_type == "day":
         return day_type
-    if keyboard_type == "time":
+    elif keyboard_type == "time":
         return time_type
-    if keyboard_type == "month":
+    elif keyboard_type == "month":
         return month_type
+    elif keyboard_type == "timetable_range":
+        return timetable_range_type
+    elif keyboard_type == "weekends":
+        return weekends_type

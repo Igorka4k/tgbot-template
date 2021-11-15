@@ -4,11 +4,12 @@ from telegram.ext import CommandHandler, ConversationHandler, MessageHandler, Fi
 from telegram import *
 
 from functions.payments.example import keyboard_callback_handler, show_carousel
-from functions.timetable.db.queries import get_user_last_date, delete_appointment
+from functions.timetable.db.queries import get_user_last_date, delete_appointment, get_days_off
 from functions.timetable.example import *
 from functions.timetable.admin_example import *
 from functions.timetable.tools import db_connect, CalendarCog
 from functions.timetable.db import queries
+from functions.timetable.new_calendar.example import *
 from constants import *
 
 from base_template.keyboards import *
@@ -24,10 +25,20 @@ ADMIN_CHAT = list(map(int, environ.get('ADMIN_CHAT').split(',')))
 def start(update, ctx):
     ctx.user_data["is_authorized"] = True
     ctx.user_data["state"] = 'main_menu'
+    ctx.user_data["make_an_appointment"] = False
+    ctx.user_data["choose_holidays"] = {1: False, 2: False}
     ctx.user_data["tg_account"] = update.message.from_user["username"]
     ctx.user_data["is_admin"] = True if update.effective_chat.id in ADMIN_CHAT else False
+
+    # ==== timetable_settings:
+    ctx.user_data["timetable_settings"] = {
+        "timetable_range": queries.get_timetable_range(db_connect()),
+        "working_hours": queries.get_working_hours(db_connect()),
+        "days_off": queries.get_days_off(db_connect()),
+        "holidays": queries.get_holidays(db_connect())
+    }
     if update.message.from_user["full_name"] is None:
-        ctx.user_data["full_name"] = "Аноним"
+        ctx.user_data["full_name"] = anonymous_name
     else:
         ctx.user_data["full_name"] = update.message.from_user["full_name"]
 
@@ -37,10 +48,10 @@ def start(update, ctx):
 
     if not queries.is_authorized(connection, update.message.from_user["tg_account"]):
         queries.new_user_adding(connection, ctx.user_data["full_name"], ctx.user_data["tg_account"])
-        text += "Добро пожаловать к нам в бота!!!\n"
+        text += welcome_msg
     else:
-        text += "Вы уже авторизованы, я вас запомнил.\n"
-    text += "Вы находитесь в главном меню."
+        text += authorized_already_msg
+    text += main_menu_nav_msg
 
     if ctx.user_data["is_admin"]:
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=ReplyKeyboardMarkup(
@@ -58,12 +69,11 @@ def menu(update, ctx):
     if msg == online_timetable_btn:
         ctx.user_data["state"] = "online_appointment"
         if ctx.user_data["is_admin"]:
-            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Открыто меню администратора онлайн-записей.",
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_menu_nav_msg__admin,
                                  reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu,
                                                                   resize_keyboard=True))
         else:
-            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы находитесь в пользовательском меню"
-                                                                        " онлайн-записи.",
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_menu_nav_msg__user,
                                  reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
         return 'online_appointment'
 
@@ -71,21 +81,20 @@ def menu(update, ctx):
         ctx.user_data["state"] = "certificates"
         if ctx.user_data["is_admin"]:
             ctx.bot.send_message(chat_id=update.message.chat_id,
-                                 text="Добро пожаловать в редактор витрины Вашего магазина!\n\n"
-                                      "Выберите один из вариантов ниже.",
+                                 text=shop_nav_msg__admin,
                                  reply_markup=ReplyKeyboardMarkup(INVOICE_EDITOR_KEYBOARD,
                                                                   resize_keyboard=True))
             return 'certificates'
         else:
             ctx.user_data["state"] = "menu"
             ctx.bot.send_message(chat_id=update.message.chat_id,
-                                 text="Добро пожаловать в наш магазин сертификатов!\n\nНаши товары:",
+                                 text=shop_nav_msg__user,
                                  reply_markup=ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__user, resize_keyboard=True))
 
             show_carousel(update, ctx)
             return 'menu'
 
-    if msg == "Рассылка спец. предложений":
+    if msg == offers_sending_btn:
         ctx.user_data["state"] = "menu"
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=pass_message)
     return 'menu'
@@ -100,19 +109,18 @@ def online_appointment(update, ctx):
         else:
             keyboard = ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__user, resize_keyboard=True)
 
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы вернулись в главное меню.",
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_msg,
                              reply_markup=keyboard)
         return 'menu'
 
     elif ctx.user_data["is_admin"]:
         if msg == check_appointments_btn:
-            get_dates(update, ctx)  # функция из timetable.example
+            get_dates(update, ctx)
 
         elif msg == settings_btn:
             ctx.user_data["states"] = 'online_appointment_settings'
             keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_SETTINGS, resize_keyboard=True)
-            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы перешли в раздел редактирования"
-                                                                        "режима онлайн-записи",
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_editor_nav_msg,
                                  reply_markup=keyboard)
             return "online_appointment_settings"
 
@@ -133,7 +141,7 @@ def online_appointment(update, ctx):
         elif msg == appointment_info_btn:
             last_date = get_user_last_date(db_connect(), ctx.user_data["tg_account"])
             if not last_date:
-                msg_to_send = "У вас нет текущей записи на данный момент."
+                msg_to_send = without_appointment_exc_msg__info
             else:
                 msg_to_send = f"Вы записаны на {last_date['date']}, {last_date['time']}."
             ctx.bot.send_message(chat_id=update.effective_chat.id,
@@ -142,7 +150,7 @@ def online_appointment(update, ctx):
         elif msg == cancel_appointment_btn:
             last_date = get_user_last_date(db_connect(), ctx.user_data["tg_account"])
             if not last_date:
-                msg_to_send = "Вы и так не записаны."
+                msg_to_send = without_appointment_exc_msg__cancel
             else:
                 delete_appointment(db_connect(), ctx.user_data["tg_account"])
                 msg_to_send = f"Запись от {last_date['date']}, {last_date['time']} отменена."
@@ -155,36 +163,132 @@ def online_appointment_settings(update, ctx):
     msg = update.message.text
     if msg == back_btn:
         ctx.user_data["state"] = "online_appointment"
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы вернулись в меню онлайн-записей.",
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_editor_comeback_msg,
                              reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu, resize_keyboard=True))
         return 'online_appointment'
     if msg == timetable_range_btn:
         keyboard = ReplyKeyboardMarkup(TIMETABLE_DURATION, resize_keyboard=True)
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Установите возможный диапазон для записи"
-                                                                    "(пока недоступно, вернитесь в меню)",
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_range_tip_msg,
                              reply_markup=keyboard)
+        return "timetable_duration_choosing"
     elif msg == working_hours_btn:
         ctx.user_data["states"] = "work_begin_hours_choosing"
         keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(), resize_keyboard=True)
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Выберите время начала работы:",
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=time_choosing_tip_msg,
                              reply_markup=keyboard)
         return 'work_begin_hours_choosing'
     elif msg == weekends_btn:
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text=pass_message)
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(i, callback_data=i) for i in weekdays_header_ru],
+                                         [InlineKeyboardButton(back_btn, callback_data=back_btn)]])
+        days_off = get_days_off(db_connect())
+        if not len(days_off):
+            msg_to_send = f"Выберите нерабочие дни. На данный момент вы работаете без выходных."
+        elif len(days_off) == 7:
+            msg_to_send = f"Уберите нерабочии дни. На данный момент к вам нельзя записаться, т.к. " \
+                          f"вы указали все дни недели нерабочими"
+        else:
+            msg_to_send = f"Выберите/Уберите нерабочие дни. ({', '.join(days_off)})"
+        ctx.bot.send_message(chat_id=update.effective_chat.id,
+                             text=msg_to_send,
+                             reply_markup=keyboard)
+        ctx.user_data["state"] = "weekends_choosing"
     elif msg == holidays_btn:
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text=pass_message)
-    return "online_appointment_settings"
+        keyboard = ReplyKeyboardMarkup(HOLIDAYS_MENU, resize_keyboard=True)
+        ctx.bot.send_message(chat_id=update.effective_chat.id,
+                             text=holidays_menu_nav_msg,
+                             reply_markup=keyboard)
+
+        return "holidays_menu"
 
 
 def certificates_admin(update, ctx):
     msg = update.message.text
     if msg == back_to_menu_btn:
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text="Вы вернулись в главное меню.",
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_msg,
                              reply_markup=ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__admin, resize_keyboard=True))
         return 'menu'
     else:
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=pass_message)
     return 'certificates'
+
+
+def all_the_callback(update, ctx):
+    query = update.callback_query
+    data = query.data
+    if data == "pass":
+        pass
+    elif ctx.user_data["state"] == "month_choosing":
+        month = int(data)
+        year = CalendarCog().get_year(month)
+        days_keyboard = InlineKeyboardMarkup(get_days_keys(year, month,
+                                                           do_timetable_settings=ctx.user_data["make_an_appointment"],
+                                                           timetable_settings=ctx.user_data["timetable_settings"]))
+        query.edit_message_text(text=f"Вы {month_abbr_ru[month]} выбрали.",
+                                reply_markup=days_keyboard)
+        ctx.user_data["date_of_appointment"].extend([year, month])
+        ctx.user_data["state"] = "day_choosing"
+
+    elif ctx.user_data["state"] == "day_choosing":
+        day = int(data)
+        ctx.user_data["date_of_appointment"].append(day)
+        keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(
+            begin=ctx.user_data["timetable_settings"]["working_hours"]["begin"],
+            end=ctx.user_data["timetable_settings"]["working_hours"]["end"]
+        ), resize_keyboard=True)
+        formatting_date = CalendarCog().chosen_date_formatting(ctx.user_data["date_of_appointment"])
+        query.edit_message_text(text=f"Выбрана дата: {formatting_date}",
+                                parse_mode=ParseMode.MARKDOWN)
+        if ctx.user_data["make_an_appointment"]:
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Выберите время",
+                                 reply_markup=keyboard)
+        elif ctx.user_data["choose_holidays"][1]:
+            ctx.user_data["choose_holidays"][1] = False
+            ctx.user_data["choose_holidays"][2] = True
+            ctx.user_data["choose_holidays"]["first_date"] = '-'.join(
+                [str(i) for i in ctx.user_data["date_of_appointment"]])
+            calendar_build(update, ctx, entry_state="month")
+        elif ctx.user_data["choose_holidays"][2]:
+            ctx.user_data["choose_holidays"][2] = False
+            ctx.user_data["choose_holidays"]["second_date"] = '-'.join(
+                [str(i) for i in ctx.user_data["date_of_appointment"]])
+            first_date = ctx.user_data["choose_holidays"]["first_date"]
+            second_date = ctx.user_data["choose_holidays"]["second_date"]
+            f_year, f_month, f_day = map(int, first_date.split("-"))
+            s_year, s_month, s_day = map(int, second_date.split("-"))
+            f_timedelta = datetime.date(year=f_year, month=f_month, day=f_day)
+            s_timedelta = datetime.date(year=s_year, month=s_month, day=s_day)
+            if f_timedelta > s_timedelta:
+                ctx.bot.send_message(chat_id=update.effective_chat.id,
+                                     text=f"Вы выбрали некорректную дату отпуска (с {first_date} по {second_date})."
+                                          f" Дата начала отпуска должна быть раньше даты конца отпуска.")
+                return
+            queries.set_holidays(db_connect(), first_date, second_date)
+            ctx.bot.send_message(chat_id=update.effective_chat.id,
+                                 text=f"Вы выбрали период нерабочих дней (с {first_date} по {second_date}) "
+                                      f"в течении которых клиенты не смогут записаться к вам.")
+
+    elif ctx.user_data["state"] == "weekends_choosing":
+        if data == back_btn:
+            query.delete_message()
+            ctx.user_data["state"] = "online_appointment_settings"
+            ctx.bot.send_message(chat_id=update.effective_chat.id,
+                                 text=timetable_editor_comeback_msg,
+                                 reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_SETTINGS, resize_keyboard=True))
+            return 'online_appointment_settings'
+        values = queries.set_days_off(db_connect(), data)
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(i, callback_data=i) for i in weekdays_header_ru],
+                                         [InlineKeyboardButton(back_btn, callback_data=back_btn)]])
+        days_off = [weekdays_header_ru[i] for i in range(len(weekdays_header_ru)) if values[i] == 1]
+
+        if not len(days_off):
+            msg_to_send = f"Выберите нерабочие дни. На данный момент вы работаете без выходных."
+        elif len(days_off) == 7:
+            msg_to_send = f"Уберите нерабочии дни. На данный момент к вам нельзя записаться, т.к. " \
+                          f"вы указали все дни недели нерабочими"
+        else:
+            msg_to_send = f"Выберите/Уберите нерабочие дни. ({', '.join(days_off)})"
+        query.edit_message_text(text=msg_to_send,
+                                reply_markup=keyboard)
 
 
 def yes_no_handler(update, ctx):
@@ -193,7 +297,8 @@ def yes_no_handler(update, ctx):
 
 
 def stop(update, ctx):
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Stopped", reply_markup=ReplyKeyboardRemove())
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text=conv_handler_stop_msg,
+                         reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
 
@@ -206,19 +311,21 @@ start_handler = CommandHandler("start", start)
 stop_handler = CommandHandler("stop", stop)
 unknown_handler = MessageHandler(Filters.command, unknown)
 
+all_the_callback_handler = CallbackQueryHandler(callback=all_the_callback)
+
 main_menu_conv_handler = ConversationHandler(
     entry_points=[start_handler],
     states={
         "menu": [MessageHandler(
             Filters.regex(
-                f'^({online_timetable_btn}|{certificates_btn}|Рассылка спец. предложений)$')
+                f'^({online_timetable_btn}|{certificates_btn}|{offers_sending_btn})$')
             & (~Filters.command), menu)],
         "online_appointment": [
             MessageHandler(Filters.regex(f'^({settings_btn}|{check_appointments_btn}|{back_to_menu_btn})$')
                            & (~Filters.command), online_appointment),
             MessageHandler(Filters.regex(
                 f'^({make_appointment_btn}|{appointment_info_btn}|{cancel_appointment_btn}|{back_to_menu_btn})$'),
-                           online_appointment)],
+                online_appointment)],
 
         "certificates": [
 
@@ -241,18 +348,26 @@ main_menu_conv_handler = ConversationHandler(
             MessageHandler(Filters.text & (~Filters.command), work_begin_hours_choosing)],
         "work_end_hours_choosing": [
             MessageHandler(Filters.text & (~Filters.command), work_end_hours_choosing)
-        ]
+        ],
+        "timetable_duration_choosing": [
+            MessageHandler(Filters.text & (~Filters.command), timetable_duration_choosing)
+        ],
+        "holidays_menu": [
+            MessageHandler(Filters.text & (~Filters.command), holidays_menu)
+        ],
 
     },
-    fallbacks=[start_handler]
+    fallbacks=[start_handler],
 )
 
 updater = Updater(token=environ.get('BOT_TOKEN'), use_context=True)
 dispatcher = updater.dispatcher
 
 timetable_connect(updater)
+# calendar_connect(updater)
 dispatcher.add_handler(main_menu_conv_handler)
 
+dispatcher.add_handler(all_the_callback_handler)
 dispatcher.add_handler(CallbackQueryHandler(callback=keyboard_callback_handler, pass_chat_data=True))
 
 dispatcher.add_handler(unknown_handler)
