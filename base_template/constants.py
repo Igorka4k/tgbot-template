@@ -29,12 +29,13 @@ disagreement_btn = "Нет, не нужно"
 
 # some words:
 anonymous_name = "Аноним"
+anonymous_surname = "Анонимович"
 
 # most part of the messages:
 welcome_msg = "Добро пожаловать к нам в бота!!!\n"
 pass_message = "Сюда функционал ещё не завезли"
 conv_handler_stop_msg = "Stopped"
-authorized_already_msg = "Вы уже авторизованы, я вас запомнил.\n"
+authorized_already_msg = "Вы уже авторизованы.\n"
 working_hours_choosing_msg2 = "Теперь введите время прекращения работы"
 
 # ---- nav/comeback messages:
@@ -63,5 +64,12 @@ with_holidays_exc_msg__setting = "У вас уже есть запланиров
 timetable_range_tip_msg = "Установите возможный диапазон для записи."
 time_choosing_tip_msg = "Выберите время начала работы:"
 working_hours_choosing_tip_msg1 = "Выберите время начала работы:"
+
+
+# ---- notifications:
+promise_msg = "Мы обязательно напомним вам о приёме за день до вашей записи."
+day_before_notify_msg = "Добрый вечер! напоминаем, что завтра вы записаны на приём! " \
+                        "Напомним вам ещё раз об этом за 2 часа до приёма"
+two_hours_before_notify_msg = "Через 2 часа у вас состоится приём."
 
 

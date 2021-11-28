@@ -44,7 +44,7 @@ def calendar_build(update, ctx, entry_state="month", do_timetable_settings=False
 
 
 def get_month_keys(do_timetable_settings, timetable_settings=None):
-    """getting month keys (winter, spring, summer, autumn)"""
+    """ getting month keys (winter, spring, summer, autumn) """
     if do_timetable_settings:
         month_range = list(
             map(lambda x: x.month, ExceptionCog().get_timetable_range(timetable_settings["timetable_range"])))

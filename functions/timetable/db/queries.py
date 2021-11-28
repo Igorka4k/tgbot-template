@@ -7,7 +7,8 @@ def table_create(connection, title):
         try:
             table_create_query = f"CREATE TABLE `{title}` (" \
                                  "`id` int auto_increment," \
-                                 "`mode` varchar(32) NOT NULL," \
+                                 "`mode_id` int NOT NULL," \
+                                 "`appointment_id` int NOT NULL," \
                                  "PRIMARY KEY  (`id`));"
             cursor.execute(table_create_query)
             connection.commit()
@@ -76,6 +77,22 @@ def get_timetable_range(connection):
         cursor.execute(query)
         timetable_range = cursor.fetchone()
         return int(timetable_range["mode"])
+
+
+def get_notifies(connection):
+    with connection.cursor() as cursor:
+        query = "SELECT * FROM `notifies`"
+        cursor.execute(query)
+        notifies_data = cursor.fetchone()
+        return notifies_data
+
+
+def set_notifies(connection, mode_id, appointment_id):
+    with connection.cursor() as cursor:
+        query = "INSERT INTO `notifies` (mode_id, appointment_id)" \
+                f"VALUES('{mode_id}', '{appointment_id}');"
+        cursor.execute(query)
+        connection.commit()
 
 
 def set_days_off(connection, day):
@@ -227,4 +244,3 @@ def clear_appointments(connection):
 #     raise ImportError("Can't import environment variables")
 #
 # connection = db_connect()
-#

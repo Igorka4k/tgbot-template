@@ -10,6 +10,7 @@ from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from os import environ
 import functools
 from functions.timetable.new_calendar.example import calendar_build
+from functions.timetable import notifies
 
 
 def timetable_script_begin(update, ctx):
@@ -30,7 +31,8 @@ def timetable_script_begin(update, ctx):
         "timetable_range": queries.get_timetable_range(db_connect()),
         "working_hours": queries.get_working_hours(db_connect()),
         "days_off": queries.get_days_off(db_connect()),
-        "holidays": queries.get_holidays(db_connect())
+        "holidays": queries.get_holidays(db_connect()),
+        "notifies": queries.get_notifies(db_connect())
     }
     print("timetable_settings:", ctx.user_data["timetable_settings"])
     ctx.user_data["make_an_appointment"] = True
@@ -175,7 +177,18 @@ def timetable_script_finish(update, ctx):
     formatting_date = f"{date[0]}-{date[1]}-{date[2]}, {date[3]}"
     if ctx.user_data["make_an_appointment"]:
         connection = db_connect()
-        full_name = update.message.from_user["first_name"] + " " + update.message.from_user["last_name"]
+        try:
+            name = update.message.from_user["first_name"]
+            surname = update.message.from_user["last_name"]
+            if name is None:
+                name = anonymous_name
+            if surname is None:
+                surname = anonymous_surname
+            full_name = name + " " + surname
+        except Exception as ex:
+            print(ex)
+            full_name = anonymous_name + " " + anonymous_surname
+
         time = date[3]
         date = f"{date[2]}-{date[1]}-{date[0]}"
 
@@ -186,6 +199,9 @@ def timetable_script_finish(update, ctx):
 
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Вы записаны на {formatting_date}.",
                          reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
+    datetime_from_formatting = get_datetime_from_formatting(formatting_date)
+    print("Преобразование:", datetime_from_formatting)
+    notifies.schedule_notify(update, ctx, datetime_from_formatting)
     return "online_appointment"
 
 
