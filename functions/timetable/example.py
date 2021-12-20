@@ -1,16 +1,16 @@
-from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, \
-    CallbackQueryHandler
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
+from telegram.ext import Updater, CommandHandler, ConversationHandler
+from telegram import ReplyKeyboardRemove
 from base_template.keyboards import *
 from functions.timetable.tools import *
 from base_template.decorators import *
-from functions.timetable.db import queries
+from base_template.db import queries
 import datetime as dt
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from os import environ
 import functools
 from functions.timetable.new_calendar.example import calendar_build
 from functions.timetable import notifies
+from base_template.constants import *
 
 
 def timetable_script_begin(update, ctx):

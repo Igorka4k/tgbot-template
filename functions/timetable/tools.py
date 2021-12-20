@@ -2,7 +2,7 @@ import pymysql
 import datetime
 from dateutil.relativedelta import relativedelta
 from .new_calendar.constants import *
-from base_template.constants import *
+from base_template.context import *
 from os import environ
 
 
@@ -59,8 +59,8 @@ class CalendarCog:
             end = datetime.time(int(end.split(":")[0]), int(end.split(":")[1]))
         hours_keyboard = []
         one_hour = datetime.timedelta(minutes=0)
-
-        for i in range(0, 24 * 2):
+        # для изменения диапазона между записями надо изменить (1) и (2)
+        for i in range(0, 24 * 2):  # (1)
             total_seconds = int(one_hour.total_seconds())
             hours, remainder = divmod(total_seconds, 60 * 60)
             minutes, seconds = divmod(remainder, 60)
@@ -70,7 +70,7 @@ class CalendarCog:
                     hours_keyboard.append([iter_time.strftime("%H:%M")])
             else:
                 hours_keyboard.append([iter_time.strftime("%H:%M")])
-            one_hour = one_hour + datetime.timedelta(minutes=30)
+            one_hour = one_hour + datetime.timedelta(minutes=30)  # (2)
         return hours_keyboard
 
 

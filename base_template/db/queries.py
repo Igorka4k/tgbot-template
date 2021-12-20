@@ -5,11 +5,13 @@ def table_create(connection, title):
     """table init"""
     with connection.cursor() as cursor:
         try:
-            table_create_query = f"CREATE TABLE `{title}` (" \
-                                 "`id` int auto_increment," \
-                                 "`mode_id` int NOT NULL," \
-                                 "`appointment_id` int NOT NULL," \
-                                 "PRIMARY KEY  (`id`));"
+            table_create_query = f"CREATE TABLE {title} (" \
+                                 "id INT AUTO_INCREMENT," \
+                                 "title VARCHAR(32) NOT NULL," \
+                                 "description TEXT NOT NULL," \
+                                 "img BLOB NULL," \
+                                 "price INT NOT NULL," \
+                                 "PRIMARY KEY (id));"
             cursor.execute(table_create_query)
             connection.commit()
             print("table added...")
@@ -31,6 +33,35 @@ def get_data(connection):
                                    f"######")
 
         return f"Кол-во записей: {count}\n\n" + '\n\n'.join(formatting_data)
+
+
+def add_service_to_price(connection, title, price, description=None, img=None):
+    # if description is None:
+    #     description = "-"
+    # if img is None:
+    #     img = "-"
+    with connection.cursor() as cursor:
+        add_query = "INSERT INTO `price` (title,description,img,price)" \
+                    f"VALUES('{title}', '{description}', '{img}', '{price}')"
+        cursor.execute(add_query)
+        connection.commit()
+        print("new service has been added.")
+
+
+def get_service_from_price(connection):
+    with connection.cursor() as cursor:
+        get_query = "SELECT * FROM `price`"
+        cursor.execute(get_query)
+        all_the_services = cursor.fetchall()
+        return all_the_services
+
+
+def delete_service_from_price(connection, title):
+    with connection.cursor() as cursor:
+        del_query = f"DELETE FROM `price` WHERE `title` = '{title}'"
+        cursor.execute(del_query)
+        connection.commit()
+        print(f"{title} has been delete from the check_list.")
 
 
 def get_working_hours(connection):
@@ -232,15 +263,19 @@ def clear_appointments(connection):
         cursor.execute(clear_query)
         connection.commit()
 
-# place for query tests:
+
+# place for query tests: (не удалять)
+
+
 # from functions.timetable.tools import db_connect
 #
 # from os import environ, path
 # from dotenv import load_dotenv
 #
-# if path.exists('../../../.env'):  # Переменные окружения хранятся в основной директории проекта
-#     load_dotenv('../../../.env')
+# if path.exists('../../.env'):  # Переменные окружения хранятся в основной директории проекта
+#     load_dotenv('../../.env')
 # else:
 #     raise ImportError("Can't import environment variables")
-#
+
 # connection = db_connect()
+

@@ -1,16 +1,11 @@
-# Функционал timetable со стороны админа.
+# Функционал timetable для админа.
 
-from telegram.ext import Updater, CommandHandler, Filters, MessageHandler, ConversationHandler, CallbackQueryHandler
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
 from base_template.keyboards import *
 from functions.timetable.new_calendar.example import calendar_build
 from functions.timetable.tools import *
 from base_template.decorators import *
-from functions.timetable.db import queries
+from base_template.db import queries
 import datetime as dt
-from functions.timetable.new_calendar.constants import *
-from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
-from os import environ
 
 import functools
 

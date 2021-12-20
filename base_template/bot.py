@@ -1,18 +1,18 @@
-from os import environ, path
+from os import path
+
 from dotenv import load_dotenv
-from telegram.ext import CommandHandler, ConversationHandler, MessageHandler, Filters, Updater, CallbackQueryHandler
-from telegram import *
+from telegram import ParseMode, InputMediaPhoto
+from telegram.ext import CallbackQueryHandler, MessageHandler, Filters
 
 from functions.payments.example import keyboard_callback_handler, show_carousel
-from functions.timetable.db.queries import get_user_last_date, delete_appointment, get_days_off
+from base_template.db.queries import get_user_last_date, delete_appointment, get_days_off
 from functions.timetable.example import *
 from functions.timetable.admin_example import *
-from functions.timetable.tools import db_connect, CalendarCog
-from functions.timetable.db import queries
 from functions.timetable.new_calendar.example import *
-from constants import *
+from base_template.some_tools import *
 
 from base_template.keyboards import *
+from base_template.constants import *
 
 if path.exists('../.env'):  # Переменные окружения хранятся в основной директории проекта
     load_dotenv('../.env')
@@ -65,7 +65,6 @@ def start(update, ctx):
 
 def menu(update, ctx):
     msg = update.message.text
-
     if msg == online_timetable_btn:
         ctx.user_data["state"] = "online_appointment"
         if ctx.user_data["is_admin"]:
@@ -77,7 +76,7 @@ def menu(update, ctx):
                                  reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
         return 'online_appointment'
 
-    if msg == certificates_btn:
+    elif msg == certificates_btn:
         ctx.user_data["state"] = "certificates"
         if ctx.user_data["is_admin"]:
             ctx.bot.send_message(chat_id=update.message.chat_id,
@@ -94,9 +93,28 @@ def menu(update, ctx):
             show_carousel(update, ctx)
             return 'menu'
 
-    if msg == offers_sending_btn:
+    elif msg == offers_sending_btn:
         ctx.user_data["state"] = "menu"
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=pass_message)
+
+    elif msg == price_btn:
+        data = queries.get_service_from_price(db_connect())
+        ctx.user_data["price_info"] = {i['title']: i for i in data}
+        prices = [(i["title"], i["price"]) for i in data]
+        # в callback_data попробовать передать ctx.user_data["state"] для реализации новой логики меню.
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(f"{i[0]} ({i[1]} руб)",
+                                                               callback_data=i[0])] for i in prices])
+        ctx.bot.send_message(chat_id=update.effective_chat.id,
+                             text=f"{price_checklist_msg}",
+                             reply_markup=keyboard)
+
+    elif msg == all_the_text_editor_btn:
+        keyboard = ReplyKeyboardMarkup(ALL_THE_TEXT_EDITOR_MENU, resize_keyboard=True)
+        ctx.user_data["state"] = "text_editor_menu"
+        ctx.bot.send_message(chat_id=update.effective_chat.id,
+                             text=all_the_text_editor_menu_msg,
+                             reply_markup=keyboard)
+        return 'text_editor_menu'
     return 'menu'
 
 
@@ -159,6 +177,29 @@ def online_appointment(update, ctx):
     return 'online_appointment'
 
 
+def text_editor_menu(update, ctx):
+    msg = update.message.text
+    if msg == back_btn:
+        ctx.user_data["state"] = "main_menu"
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_msg,
+                             reply_markup=ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__admin, resize_keyboard=True))
+        return 'menu'
+
+    if msg == default_text_modes_menu_btn:
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(str(i), callback_data="pass")] for i in range(3)])
+        ctx.bot.send_message(chat_id=update.effective_chat.id,
+                             text="Темы кнопок и сообщений по-умолчанию:",
+                             reply_markup=keyboard)
+    elif msg == get_texts_list_btn:
+        keyboard = ReplyKeyboardMarkup(CANCEL_KEYBOARD, resize_keyboard=True)
+        ctx.bot.send_message(chat_id=update.effective_chat.id,
+                             text="Выберите текст для редактирования:\n"
+                                  f"{get_texts_list(dispatcher, ctx, formatting_to_text=True)}",
+                             reply_markup=keyboard)
+        # return "finishing_handler"
+        return "set_new_text_handler"
+
+
 def online_appointment_settings(update, ctx):
     msg = update.message.text
     if msg == back_btn:
@@ -179,7 +220,7 @@ def online_appointment_settings(update, ctx):
         return 'work_begin_hours_choosing'
     elif msg == weekends_btn:
         keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(i, callback_data=i) for i in weekdays_header_ru],
-                                         [InlineKeyboardButton(back_btn, callback_data=back_btn)]])
+                                         [InlineKeyboardButton(close_btn, callback_data=back_btn)]])
         days_off = get_days_off(db_connect())
         if not len(days_off):
             msg_to_send = f"Выберите нерабочие дни. На данный момент вы работаете без выходных."
@@ -216,7 +257,7 @@ def all_the_callback(update, ctx):
     query = update.callback_query
     data = query.data
     if data == "pass":
-        pass
+        return
     elif ctx.user_data["state"] == "month_choosing":
         month = int(data)
         year = CalendarCog().get_year(month)
@@ -277,7 +318,7 @@ def all_the_callback(update, ctx):
             return 'online_appointment_settings'
         values = queries.set_days_off(db_connect(), data)
         keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(i, callback_data=i) for i in weekdays_header_ru],
-                                         [InlineKeyboardButton(back_btn, callback_data=back_btn)]])
+                                         [InlineKeyboardButton(close_btn, callback_data=back_btn)]])
         days_off = [weekdays_header_ru[i] for i in range(len(weekdays_header_ru)) if values[i] == 1]
 
         if not len(days_off):
@@ -290,10 +331,31 @@ def all_the_callback(update, ctx):
         query.edit_message_text(text=msg_to_send,
                                 reply_markup=keyboard)
 
+    if data == "укладка":
+        price_info = ctx.user_data["price_info"]
+        # print(f"{price_info[data]['img']}\n")  # картинка
+        query.edit_message_text(text=f"Раздел: {price_info[data]['title']} Цена: {price_info[data]['price']}\n"
+                                     f"{price_info[data]['description']}")
+    elif data == "чистка":
+        price_info = ctx.user_data["price_info"]
+        query.edit_message_text(text=f"Раздел: {price_info[data]['title']} Цена: {price_info[data]['price']}\n"
+                                     f"{price_info[data]['description']}")
+
 
 def yes_no_handler(update, ctx):
     msg = update.message.text
     return "menu"
+
+
+def finishing_handler(update, ctx):
+    msg = update.message.text
+    if ctx.user_data["state"] == "text_editor_menu":
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_msg,
+                             reply_markup=ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__admin, resize_keyboard=True))
+        return 'menu'
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_msg,
+                         reply_markup=ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__admin, resize_keyboard=True))
+    return 'menu'
 
 
 def stop(update, ctx):
@@ -318,7 +380,8 @@ main_menu_conv_handler = ConversationHandler(
     states={
         "menu": [MessageHandler(
             Filters.regex(
-                f'^({online_timetable_btn}|{certificates_btn}|{offers_sending_btn})$')
+                f'^({online_timetable_btn}|{certificates_btn}|'
+                f'{offers_sending_btn}|{price_btn}|{all_the_text_editor_btn})$')
             & (~Filters.command), menu)],
         "online_appointment": [
             MessageHandler(Filters.regex(f'^({settings_btn}|{check_appointments_btn}|{back_to_menu_btn})$')
@@ -326,6 +389,10 @@ main_menu_conv_handler = ConversationHandler(
             MessageHandler(Filters.regex(
                 f'^({make_appointment_btn}|{appointment_info_btn}|{cancel_appointment_btn}|{back_to_menu_btn})$'),
                 online_appointment)],
+        "text_editor_menu": [
+            MessageHandler(Filters.regex(
+                f'^({default_text_modes_menu_btn}|{get_texts_list_btn}|{back_btn})$')
+                           & (~Filters.command), text_editor_menu)],
 
         "certificates": [
 
@@ -335,6 +402,7 @@ main_menu_conv_handler = ConversationHandler(
         "yes_no_handler": [
             MessageHandler(Filters.text & (~Filters.command), yes_no_handler)
         ],
+        "finishing_handler": [MessageHandler(Filters.text & (~Filters.command), finishing_handler)],
 
         # below the handlers, that make an appointment:
         "month_choosing": [MessageHandler(Filters.text & (~Filters.command), month_choosing)],
@@ -355,7 +423,12 @@ main_menu_conv_handler = ConversationHandler(
         "holidays_menu": [
             MessageHandler(Filters.text & (~Filters.command), holidays_menu)
         ],
-
+        "set_new_text_handler": [
+            MessageHandler(Filters.command, set_new_text_handler)
+        ],
+        "set_replica_handler": [
+            MessageHandler(Filters.text & (~Filters.command), set_new_replica_text)
+        ]
     },
     fallbacks=[start_handler],
 )
