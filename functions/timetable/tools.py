@@ -58,19 +58,37 @@ class CalendarCog:
             begin = datetime.time(int(begin.split(":")[0]), int(begin.split(":")[1]))
             end = datetime.time(int(end.split(":")[0]), int(end.split(":")[1]))
         hours_keyboard = []
-        one_hour = datetime.timedelta(minutes=0)
-        # для изменения диапазона между записями надо изменить (1) и (2)
-        for i in range(0, 24 * 2):  # (1)
-            total_seconds = int(one_hour.total_seconds())
+        if begin > end:
+            ans = self.get_hours_keyboard(begin='00:00', end=end.strftime('%H:%M'))
+            ans.extend(self.get_hours_keyboard(begin=begin.strftime('%H:%M'), end="23:59"))
+            return ans
+        iter_time = begin
+        time_range = 30  # Диапазон между записями.
+        while iter_time <= end:
+            hours_keyboard.append([iter_time.strftime("%H:%M")])
+            timedelta = datetime.timedelta(hours=iter_time.hour, minutes=iter_time.minute) \
+                        + datetime.timedelta(minutes=time_range)
+            total_seconds = int(timedelta.total_seconds())
             hours, remainder = divmod(total_seconds, 60 * 60)
             minutes, seconds = divmod(remainder, 60)
-            iter_time = datetime.time(hours, minutes, 0)
-            if begin is not None and end is not None:
-                if begin <= iter_time <= end:
-                    hours_keyboard.append([iter_time.strftime("%H:%M")])
-            else:
-                hours_keyboard.append([iter_time.strftime("%H:%M")])
-            one_hour = one_hour + datetime.timedelta(minutes=30)  # (2)
+            if hours >= 24:
+                break
+            iter_time = datetime.time(hour=hours, minute=minutes, second=seconds)
+        print(hours_keyboard)
+
+        # # для изменения диапазона между записями надо изменить (1) и (2)
+        # one_hour = datetime.timedelta(minutes=0)
+        # for i in range(0, 24 * 2):  # (1)
+        #     total_seconds = int(one_hour.total_seconds())
+        #     hours, remainder = divmod(total_seconds, 60 * 60)
+        #     minutes, seconds = divmod(remainder, 60)
+        #     iter_time = datetime.time(hours, minutes, 0)
+        #     if begin is not None and end is not None:
+        #         if begin <= iter_time <= end:
+        #             hours_keyboard.append([iter_time.strftime("%H:%M")])
+        #     else:
+        #         hours_keyboard.append([iter_time.strftime("%H:%M")])
+        #     one_hour = one_hour + datetime.timedelta(minutes=30)  # (2)
         return hours_keyboard
 
 

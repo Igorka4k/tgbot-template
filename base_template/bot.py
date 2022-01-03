@@ -1,16 +1,14 @@
-from os import path
-
+from os import path, environ
 from dotenv import load_dotenv
 from telegram import ParseMode, InputMediaPhoto
 from telegram.ext import CallbackQueryHandler, MessageHandler, Filters
 
+from base_template.db.queries import *
 from functions.payments.example import keyboard_callback_handler, show_carousel
-from base_template.db.queries import get_user_last_date, delete_appointment, get_days_off
 from functions.timetable.example import *
 from functions.timetable.admin_example import *
 from functions.timetable.new_calendar.example import *
 from base_template.some_tools import *
-
 from base_template.keyboards import *
 from base_template.constants import *
 
@@ -214,7 +212,8 @@ def online_appointment_settings(update, ctx):
         return "timetable_duration_choosing"
     elif msg == working_hours_btn:
         ctx.user_data["states"] = "work_begin_hours_choosing"
-        keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(), resize_keyboard=True)
+        keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(begin="00:00", end="23:59"),
+                                       resize_keyboard=True)
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=time_choosing_tip_msg,
                              reply_markup=keyboard)
         return 'work_begin_hours_choosing'
@@ -444,7 +443,6 @@ dispatcher.add_handler(all_the_callback_handler)
 dispatcher.add_handler(CallbackQueryHandler(callback=keyboard_callback_handler, pass_chat_data=True))
 
 dispatcher.add_handler(unknown_handler)
-
 if __name__ == "__main__":
     updater.start_polling()
     updater.idle()

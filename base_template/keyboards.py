@@ -1,5 +1,6 @@
 # main menu
 from functions.timetable.tools import CalendarCog
+# from db.queries import *
 from context import *
 
 MAIN_MENU_KEYBOARD__user = [[online_timetable_btn],
@@ -28,7 +29,14 @@ ONLINE_TIMETABLE_user_menu = [[make_appointment_btn], [appointment_info_btn, can
 ONLINE_TIMETABLE_SETTINGS = [[timetable_range_btn, working_hours_btn, weekends_btn, holidays_btn],
                              [back_btn]]
 
-ONLINE_TIMETABLE_HOURS = CalendarCog().get_hours_keyboard()
+# working_hours = queries.get_working_hours(db_connect())
+# print(working_hours)
+ONLINE_TIMETABLE_HOURS = CalendarCog().get_hours_keyboard(
+    "00:00", "23:59"
+)
+print("-")
+print(ONLINE_TIMETABLE_HOURS)
+print("0")
 
 TIMETABLE_DURATION = [[week_range_btn], [one_month_range_btn], [three_month_range_btn], [year_range_btn], [back_btn]]
 

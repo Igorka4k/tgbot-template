@@ -34,7 +34,6 @@ def timetable_script_begin(update, ctx):
         "holidays": queries.get_holidays(db_connect()),
         "notifies": queries.get_notifies(db_connect())
     }
-    print("timetable_settings:", ctx.user_data["timetable_settings"])
     ctx.user_data["make_an_appointment"] = True
     return calendar_build(update, ctx, do_timetable_settings=True)
 
@@ -76,10 +75,6 @@ def calendar_date_callback(update, ctx):
             begin=ctx.user_data["timetable_settings"]["working_hours"]["begin"],
             end=ctx.user_data["timetable_settings"]["working_hours"]["end"]
         ), resize_keyboard=True)
-        print(CalendarCog().get_hours_keyboard(
-            begin=ctx.user_data["timetable_settings"]["working_hours"]["begin"],
-            end=ctx.user_data["timetable_settings"]["working_hours"]["end"]
-        ))
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=time_choosing_tip_msg, reply_markup=keyboard)
         ctx.user_data["is_date_choice"] = True
         return "time_choosing"
@@ -200,7 +195,6 @@ def timetable_script_finish(update, ctx):
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Вы записаны на {formatting_date}.",
                          reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
     datetime_from_formatting = get_datetime_from_formatting(formatting_date)
-    print("Преобразование:", datetime_from_formatting)
     notifies.schedule_notify(update, ctx, datetime_from_formatting)
     return "online_appointment"
 

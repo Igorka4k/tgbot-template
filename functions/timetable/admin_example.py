@@ -10,7 +10,10 @@ import datetime as dt
 import functools
 
 
-@functools.partial(only_table_values, collection=CalendarCog().get_hours_keyboard(), keyboard_type="time")
+@functools.partial(only_table_values, collection=CalendarCog().get_hours_keyboard(
+    begin="00:00",
+    end="23:59"
+), keyboard_type="time")
 def work_begin_hours_choosing(update, ctx):
     ctx.user_data["state"] = "work_end_hours_choosing"
     msg = update.message.text
@@ -22,26 +25,25 @@ def work_begin_hours_choosing(update, ctx):
     return "work_end_hours_choosing"
 
 
-# сделать проверку на то, чтобы время было не раньше начала (в декораторе)
-@functools.partial(only_table_values, collection=CalendarCog().get_hours_keyboard(), keyboard_type="time")
+@functools.partial(only_table_values, collection=CalendarCog().get_hours_keyboard(
+    begin="00:00",
+    end="23:59"
+), keyboard_type="time")
 def work_end_hours_choosing(update, ctx):
     msg = update.message.text
     prev = ctx.user_data["prev_msg"]
+
+    # ниже проверка на то, что время может быть выбрано в пределах одного текущего дня:
     if dt.timedelta(hours=int(msg.split(":")[0]), minutes=int(msg.split(":")[1])) <= \
             dt.timedelta(hours=int(prev.split(":")[0]), minutes=int(prev.split(":")[1])):
-        ctx.bot.send_message(chat_id=update.effective_chat.id,
-                             text=working_hours_choosing_exc_msg)
-        ctx.user_data["states"] = "work_begin_hours_choosing"
-        keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(), resize_keyboard=True)
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text=working_hours_choosing_tip_msg1,
-                             reply_markup=keyboard)
-        return "work_begin_hours_choosing"
+        two_dates_range = True
     ctx.user_data["work_hours"][ctx.user_data['prev_msg']] = msg
 
-    keyboard = ReplyKeyboardMarkup(YES_NO_KEYBOARD, resize_keyboard=True)
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="Добавить часы работы? "
-                                                                "(в случае если рабочий день не закончен)",
-                         reply_markup=keyboard)
+    # ниже идёт выбор обеденного перерыва (недоработанно, не удалять):
+    # keyboard = ReplyKeyboardMarkup(YES_NO_KEYBOARD, resize_keyboard=True)
+    # ctx.bot.send_message(chat_id=update.effective_chat.id, text="Добавить часы работы? "
+    #                                                             "(в случае если рабочий день не закончен)",
+    #                      reply_markup=keyboard)
 
     beginning_time, ending_time = set_working_hours(update, ctx)
     keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_SETTINGS, resize_keyboard=True)
