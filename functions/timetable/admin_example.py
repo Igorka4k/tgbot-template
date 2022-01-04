@@ -10,25 +10,19 @@ import datetime as dt
 import functools
 
 
-@functools.partial(only_table_values, collection=CalendarCog().get_hours_keyboard(
-    begin="00:00",
-    end="23:59"
-), keyboard_type="time")
+@functools.partial(only_table_values, collection=TIMETABLE_HOURS_ADMIN1, keyboard_type="time")
 def work_begin_hours_choosing(update, ctx):
     ctx.user_data["state"] = "work_end_hours_choosing"
     msg = update.message.text
     ctx.user_data['prev_msg'] = msg
     ctx.user_data["work_hours"] = {msg: ''}
-    keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_HOURS, resize_keyboard=True)
+    keyboard = ReplyKeyboardMarkup(TIMETABLE_HOURS_ADMIN1, resize_keyboard=True)
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=working_hours_choosing_msg2,
                          reply_markup=keyboard)
     return "work_end_hours_choosing"
 
 
-@functools.partial(only_table_values, collection=CalendarCog().get_hours_keyboard(
-    begin="00:00",
-    end="23:59"
-), keyboard_type="time")
+@functools.partial(only_table_values, collection=TIMETABLE_HOURS_ADMIN1, keyboard_type="time")
 def work_end_hours_choosing(update, ctx):
     msg = update.message.text
     prev = ctx.user_data["prev_msg"]
@@ -112,7 +106,7 @@ def holidays_menu(update, ctx):
             msg_to_send = without_holidays_exc_msg__info
         else:
             msg_to_send = f"С {current_holidays['begin_date']} по {current_holidays['end_date']} онлайн-запись будет " \
-               f"недоступна для пользователя, т.к. вы назначили отпуск на этот период."
+                          f"недоступна для пользователя, т.к. вы назначили отпуск на этот период."
         ctx.bot.send_message(chat_id=update.effective_chat.id,
                              text=msg_to_send)
         return "holidays_menu"
@@ -148,3 +142,23 @@ def set_working_hours(update, ctx):
     work_end_time = ctx.user_data["work_hours"][work_begin_time]
     queries.working_time_adding(db_connect(), work_begin_time, work_end_time)
     return work_begin_time, work_end_time
+
+
+def dates_between_range(update, ctx):
+    msg = update.message.text
+    try:
+        if int(msg) <= 0:
+            raise Exception
+        ctx.user_data['timetable_settings']["dates_between_range"] = int(msg)
+        queries.set_dates_between_range(db_connect(), int(msg))
+
+        ctx.user_data["states"] = 'online_appointment_settings'
+        keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_SETTINGS, resize_keyboard=True)
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_editor_nav_msg,
+                             reply_markup=keyboard)
+        return "online_appointment_settings"
+    except Exception as ex:
+        print(ex)
+        ctx.bot.send_message(chat_id=update.effective_chat.id,
+                             text=dates_between_range_tip_msg)
+        return "dates_between_range"

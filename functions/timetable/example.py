@@ -53,8 +53,8 @@ def calendar_script(update, ctx):
     return "time_choosing"
 
 
-def calendar_date_callback(update, ctx):
-    """calendar callback-handler function"""
+def calendar_date_callback(update, ctx):  # пока не используется
+    """calendar callback-handler function (not using)"""
     query = update.callback_query
 
     result, key, step = DetailedTelegramCalendar().process(query.data)
@@ -71,9 +71,11 @@ def calendar_date_callback(update, ctx):
         ctx.user_data["date_of_appointment"].extend([year, month, day])  # (Порядок: год-месяц-день)
 
         # time_choosing redirect:
+        print("I AM HERE")
         keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(
             begin=ctx.user_data["timetable_settings"]["working_hours"]["begin"],
-            end=ctx.user_data["timetable_settings"]["working_hours"]["end"]
+            end=ctx.user_data["timetable_settings"]["working_hours"]["end"],
+            between_range=queries.get_dates_between_range(db_connect())
         ), resize_keyboard=True)
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=time_choosing_tip_msg, reply_markup=keyboard)
         ctx.user_data["is_date_choice"] = True
@@ -148,10 +150,18 @@ def day_choosing(update, ctx):
     return "time_choosing"
 
 
-# метод partial позволяет передавать параметры в декоратор.
-@functools.partial(only_table_values, collection=ONLINE_TIMETABLE_HOURS, keyboard_type="time")
+# метод partial тут скрыт, это спецом
+# @functools.partial(only_table_values,
+#                    collection=ONLINE_TIMETABLE_HOURS,
+#                    keyboard_type="time")
 def time_choosing(update, ctx):
     msg = update.message.text
+    if [msg] not in ctx.user_data["only_table_val"]:
+        keyboard = ReplyKeyboardMarkup(ctx.user_data["only_table_val"], resize_keyboard=True)
+        ctx.bot.send_message(chat_id=update.effective_chat.id,
+                             text=all_the_exc_msg,
+                             reply_markup=keyboard)
+        return "time_choosing"
     if msg == back_btn:
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_comeback_msg,
                              reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu, resize_keyboard=True))
@@ -160,8 +170,6 @@ def time_choosing(update, ctx):
         return "time_choosing"
     ctx.user_data["date_of_appointment"].append(msg)
 
-    # ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Запись оформлена.",
-    #                      reply_markup=ReplyKeyboardRemove())
     return timetable_script_finish(update, ctx)
 
 

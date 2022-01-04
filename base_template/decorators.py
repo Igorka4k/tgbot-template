@@ -1,6 +1,7 @@
 # Тут необходимо будет прописать декораторы, которые будут обрабатывать непродуманные сценарии,
 # например прерывать диалог, когда пользователь уходит из него коммандой /start к примеру.
 from telegram import ReplyKeyboardMarkup
+from context import *
 
 from base_template.keyboards import ONLINE_TIMETABLE_admin_menu, ONLINE_TIMETABLE_user_menu
 
@@ -33,18 +34,18 @@ def only_table_values(func, collection=None, keyboard_type=None):
         except Exception as ex:
             print(ex)
             ctx.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Ошибка, выберите предложенный вариант.")
+                                 text=all_the_exc_msg)
             return "day_choosing"
         return func(update, ctx)
 
     def time_type(update, ctx):
         msg = update.message.text.lower()
-        if msg == "<< назад в меню":
-            ctx.bot.send_message(chat_id=update.effective_chat.id, text="Пока невозможно вернуться во время записи.")
+        if msg == back_to_menu_btn:
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_exc_msg)
             return
         if msg not in [i[0].lower() for i in collection]:
             ctx.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Ошибка, выберите предложенный вариант.")
+                                 text=all_the_exc_msg)
             return "time_choosing"
         return func(update, ctx)
 
@@ -52,7 +53,7 @@ def only_table_values(func, collection=None, keyboard_type=None):
         msg = update.message.text.lower()
         if msg not in [i[0].lower() for i in collection]:
             ctx.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Ошибка, выберите предложенный вариант.")
+                                 text=all_the_exc_msg)
             return "month_choosing"
         return func(update, ctx)
 
@@ -60,7 +61,7 @@ def only_table_values(func, collection=None, keyboard_type=None):
         msg = update.message.text.lower()
         if msg not in [i[0].lower() for i in collection]:
             ctx.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Ошибка, выберите предложенный вариант.")
+                                 text=all_the_exc_msg)
             return "timetable_range_choosing"
         return func(update, ctx)
 
@@ -68,7 +69,7 @@ def only_table_values(func, collection=None, keyboard_type=None):
         msg = update.message.text.lower()
         if msg not in [i.lower() for i in collection]:
             ctx.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Ошибка, выберите предложенный вариант.")
+                                 text=all_the_exc_msg)
             return "weekends_choosing"
         return func(update, ctx)
 

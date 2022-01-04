@@ -1,6 +1,8 @@
 import pymysql
 import datetime
 from dateutil.relativedelta import relativedelta
+
+from base_template.db.queries import get_dates_between_range
 from .new_calendar.constants import *
 from base_template.context import *
 from os import environ
@@ -53,28 +55,29 @@ class CalendarCog:
         formatted_date = f"{date[0]}-{date[1]}-{date[2]}"
         return formatted_date
 
-    def get_hours_keyboard(self, begin=None, end=None):
+    def get_hours_keyboard(self, begin=None, end=None, between_range=None):
         if begin and end:
             begin = datetime.time(int(begin.split(":")[0]), int(begin.split(":")[1]))
             end = datetime.time(int(end.split(":")[0]), int(end.split(":")[1]))
         hours_keyboard = []
         if begin > end:
-            ans = self.get_hours_keyboard(begin='00:00', end=end.strftime('%H:%M'))
-            ans.extend(self.get_hours_keyboard(begin=begin.strftime('%H:%M'), end="23:59"))
+            ans = self.get_hours_keyboard(begin='00:00', end=end.strftime('%H:%M'), between_range=between_range)
+            ans.extend(self.get_hours_keyboard(begin=begin.strftime('%H:%M'), end="23:59", between_range=between_range))
             return ans
         iter_time = begin
-        time_range = 30  # Диапазон между записями.
+        if between_range is None:
+            between_range = 7  # Диапазон между записями.
+
         while iter_time <= end:
             hours_keyboard.append([iter_time.strftime("%H:%M")])
             timedelta = datetime.timedelta(hours=iter_time.hour, minutes=iter_time.minute) \
-                        + datetime.timedelta(minutes=time_range)
+                        + datetime.timedelta(minutes=between_range)
             total_seconds = int(timedelta.total_seconds())
             hours, remainder = divmod(total_seconds, 60 * 60)
             minutes, seconds = divmod(remainder, 60)
             if hours >= 24:
                 break
             iter_time = datetime.time(hour=hours, minute=minutes, second=seconds)
-        print(hours_keyboard)
 
         # # для изменения диапазона между записями надо изменить (1) и (2)
         # one_hour = datetime.timedelta(minutes=0)

@@ -27,13 +27,15 @@ def start(update, ctx):
     ctx.user_data["choose_holidays"] = {1: False, 2: False}
     ctx.user_data["tg_account"] = update.message.from_user["username"]
     ctx.user_data["is_admin"] = True if update.effective_chat.id in ADMIN_CHAT else False
+    ctx.user_data["connection"] = db_connect()
 
     # ==== timetable_settings:
     ctx.user_data["timetable_settings"] = {
         "timetable_range": queries.get_timetable_range(db_connect()),
         "working_hours": queries.get_working_hours(db_connect()),
         "days_off": queries.get_days_off(db_connect()),
-        "holidays": queries.get_holidays(db_connect())
+        "holidays": queries.get_holidays(db_connect()),
+        "dates_between_range": queries.get_dates_between_range(db_connect())
     }
     if update.message.from_user["full_name"] is None:
         ctx.user_data["full_name"] = anonymous_name
@@ -205,15 +207,14 @@ def online_appointment_settings(update, ctx):
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_editor_comeback_msg,
                              reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu, resize_keyboard=True))
         return 'online_appointment'
-    if msg == timetable_range_btn:
+    elif msg == timetable_range_btn:
         keyboard = ReplyKeyboardMarkup(TIMETABLE_DURATION, resize_keyboard=True)
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_range_tip_msg,
                              reply_markup=keyboard)
         return "timetable_duration_choosing"
     elif msg == working_hours_btn:
         ctx.user_data["states"] = "work_begin_hours_choosing"
-        keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(begin="00:00", end="23:59"),
-                                       resize_keyboard=True)
+        keyboard = ReplyKeyboardMarkup(TIMETABLE_HOURS_ADMIN1, resize_keyboard=True)
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=time_choosing_tip_msg,
                              reply_markup=keyboard)
         return 'work_begin_hours_choosing'
@@ -239,6 +240,11 @@ def online_appointment_settings(update, ctx):
                              reply_markup=keyboard)
 
         return "holidays_menu"
+    elif msg == dates_between_range_btn:
+        ctx.bot.send_message(chat_id=update.effective_chat.id,
+                             text=dates_between_range_tip_msg,
+                             reply_markup=ReplyKeyboardRemove())
+        return "dates_between_range"
 
 
 def certificates_admin(update, ctx):
@@ -271,10 +277,12 @@ def all_the_callback(update, ctx):
     elif ctx.user_data["state"] == "day_choosing":
         day = int(data)
         ctx.user_data["date_of_appointment"].append(day)
-        keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(
+        ctx.user_data["only_table_val"] = only_table_val = CalendarCog().get_hours_keyboard(
             begin=ctx.user_data["timetable_settings"]["working_hours"]["begin"],
-            end=ctx.user_data["timetable_settings"]["working_hours"]["end"]
-        ), resize_keyboard=True)
+            end=ctx.user_data["timetable_settings"]["working_hours"]["end"],
+            between_range=queries.get_dates_between_range(db_connect())
+        )
+        keyboard = ReplyKeyboardMarkup(only_table_val, resize_keyboard=True)
         formatting_date = CalendarCog().chosen_date_formatting(ctx.user_data["date_of_appointment"])
         query.edit_message_text(text=f"Выбрана дата: {formatting_date}",
                                 parse_mode=ParseMode.MARKDOWN)
@@ -422,12 +430,15 @@ main_menu_conv_handler = ConversationHandler(
         "holidays_menu": [
             MessageHandler(Filters.text & (~Filters.command), holidays_menu)
         ],
+        "dates_between_range": [
+            MessageHandler(Filters.text & (~Filters.command), dates_between_range)
+        ],
         "set_new_text_handler": [
             MessageHandler(Filters.command, set_new_text_handler)
         ],
         "set_replica_handler": [
             MessageHandler(Filters.text & (~Filters.command), set_new_replica_text)
-        ]
+        ],
     },
     fallbacks=[start_handler],
 )

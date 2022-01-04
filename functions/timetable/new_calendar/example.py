@@ -102,8 +102,6 @@ def get_days_keys(year, months_num, do_timetable_settings=False, timetable_setti
                 continue
             if do_timetable_settings:
                 iter_date = datetime.date(year=year, month=months_num, day=num)
-                print(timetable_range[0], iter_date, timetable_range[1],
-                      "test")
                 if timetable_range[0] <= iter_date <= timetable_range[-1] and \
                         i not in days_off and \
                         not holidays_range[0] <= iter_date <= holidays_range[-1]:

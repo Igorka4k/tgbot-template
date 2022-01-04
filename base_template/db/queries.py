@@ -7,10 +7,7 @@ def table_create(connection, title):
         try:
             table_create_query = f"CREATE TABLE {title} (" \
                                  "id INT AUTO_INCREMENT," \
-                                 "title VARCHAR(32) NOT NULL," \
-                                 "description TEXT NOT NULL," \
-                                 "img BLOB NULL," \
-                                 "price INT NOT NULL," \
+                                 "between_range INT NOT NULL," \
                                  "PRIMARY KEY (id));"
             cursor.execute(table_create_query)
             connection.commit()
@@ -201,6 +198,27 @@ def get_holidays(connection):
         return current_holidays
 
 
+def get_dates_between_range(connection):
+    with connection.cursor() as cursor:
+        query = "SELECT * FROM `between_range`"
+        cursor.execute(query)
+        current_range = cursor.fetchone()
+        if current_range is None:
+            return None
+        return int(current_range["between_range"])
+
+
+def set_dates_between_range(connection, data):
+    with connection.cursor() as cursor:
+        clear_query = "DELETE FROM `between_range` WHERE id"
+        cursor.execute(clear_query)
+        query = "INSERT INTO `between_range` (between_range) VALUES " \
+                f"('{data}');"
+        cursor.execute(query)
+        connection.commit()
+        print("new between_range have been set..")
+
+
 def cancel_holidays(connection):
     with connection.cursor() as cursor:
         check_query = "SELECT * FROM `holidays`"
@@ -264,9 +282,9 @@ def clear_appointments(connection):
         connection.commit()
 
 
-# place for query tests: (не удалять)
-
-
+# # place for query tests: (не удалять)
+#
+#
 # from functions.timetable.tools import db_connect
 #
 # from os import environ, path
@@ -276,6 +294,6 @@ def clear_appointments(connection):
 #     load_dotenv('../../.env')
 # else:
 #     raise ImportError("Can't import environment variables")
-
 # connection = db_connect()
-
+#
+#
