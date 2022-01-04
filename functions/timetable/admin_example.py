@@ -44,6 +44,7 @@ def work_end_hours_choosing(update, ctx):
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Готово! теперь к вам можно записаться только"
                                                                 f" с {beginning_time} по {ending_time}.",
                          reply_markup=keyboard)
+    ctx.user_data["state"] = "online_appointment_settings"
     return "online_appointment_settings"
 
 
@@ -95,7 +96,7 @@ def days_off_callback(update, ctx):
 def holidays_menu(update, ctx):
     msg = update.message.text
     if msg == back_btn:
-        ctx.user_data["states"] = 'online_appointment_settings'
+        ctx.user_data["state"] = 'online_appointment_settings'
         keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_SETTINGS, resize_keyboard=True)
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_editor_comeback_msg,
                              reply_markup=keyboard)
@@ -152,7 +153,7 @@ def dates_between_range(update, ctx):
         ctx.user_data['timetable_settings']["dates_between_range"] = int(msg)
         queries.set_dates_between_range(db_connect(), int(msg))
 
-        ctx.user_data["states"] = 'online_appointment_settings'
+        ctx.user_data["state"] = 'online_appointment_settings'
         keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_SETTINGS, resize_keyboard=True)
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_editor_nav_msg,
                              reply_markup=keyboard)

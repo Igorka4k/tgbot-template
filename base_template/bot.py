@@ -35,7 +35,6 @@ def start(update, ctx):
         "working_hours": queries.get_working_hours(db_connect()),
         "days_off": queries.get_days_off(db_connect()),
         "holidays": queries.get_holidays(db_connect()),
-        "dates_between_range": queries.get_dates_between_range(db_connect())
     }
     if update.message.from_user["full_name"] is None:
         ctx.user_data["full_name"] = anonymous_name
@@ -136,7 +135,7 @@ def online_appointment(update, ctx):
             get_dates(update, ctx)
 
         elif msg == settings_btn:
-            ctx.user_data["states"] = 'online_appointment_settings'
+            ctx.user_data["state"] = 'online_appointment_settings'
             keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_SETTINGS, resize_keyboard=True)
             ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_editor_nav_msg,
                                  reply_markup=keyboard)
@@ -213,7 +212,7 @@ def online_appointment_settings(update, ctx):
                              reply_markup=keyboard)
         return "timetable_duration_choosing"
     elif msg == working_hours_btn:
-        ctx.user_data["states"] = "work_begin_hours_choosing"
+        ctx.user_data["state"] = "work_begin_hours_choosing"
         keyboard = ReplyKeyboardMarkup(TIMETABLE_HOURS_ADMIN1, resize_keyboard=True)
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=time_choosing_tip_msg,
                              reply_markup=keyboard)

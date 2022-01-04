@@ -46,7 +46,7 @@ def only_table_values(func, collection=None, keyboard_type=None):
         if msg not in [i[0].lower() for i in collection]:
             ctx.bot.send_message(chat_id=update.effective_chat.id,
                                  text=all_the_exc_msg)
-            return "time_choosing"
+            return ctx.user_data["state"]
         return func(update, ctx)
 
     def month_type(update, ctx):
