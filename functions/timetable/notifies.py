@@ -1,4 +1,3 @@
-import datetime
 from functions.timetable.tools import *
 from base_template.context import *
 

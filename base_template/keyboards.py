@@ -1,7 +1,7 @@
 # main menu
 from functions.timetable.tools import CalendarCog, db_connect
 # from db.queries import *
-from context import *
+from base_template.context import *
 
 MAIN_MENU_KEYBOARD__user = [[online_timetable_btn],
                             [price_btn],

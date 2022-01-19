@@ -1,7 +1,7 @@
 # Тут необходимо будет прописать декораторы, которые будут обрабатывать непродуманные сценарии,
 # например прерывать диалог, когда пользователь уходит из него коммандой /start к примеру.
 from telegram import ReplyKeyboardMarkup
-from context import *
+from base_template.context import *
 
 from base_template.keyboards import ONLINE_TIMETABLE_admin_menu, ONLINE_TIMETABLE_user_menu
 
