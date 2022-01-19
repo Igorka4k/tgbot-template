@@ -248,6 +248,13 @@ def certificates_admin(update, ctx):
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_msg,
                              reply_markup=ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__admin, resize_keyboard=True))
         return 'menu'
+    elif msg == "Просмотр позиций":
+        ctx.bot.send_message(chat_id=update.message.chat_id,
+                             text="Ваши товары:",
+                             reply_markup=ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__user, resize_keyboard=True))
+
+        show_carousel(update, ctx, admin=True)
+        return 'menu'
     else:
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=pass_message)
     return 'certificates'

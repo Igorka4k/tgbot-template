@@ -19,7 +19,7 @@ def db_connect():
             user=environ.get('MYSQL_USER'),
             cursorclass=pymysql.cursors.DictCursor
         )
-        print("successfully connected...")
+        # print("successfully connected...")
         return connection
     except Exception as ex:
         print("connection refused.")
@@ -53,7 +53,7 @@ def add_invoice(connection, title: str, description: str, payload: str, price: i
                         f" '{description}', '{payload}', {price});"
             cursor.execute(add_query)
             connection.commit()
-            print("invoice added...")
+            # print("invoice added...")
     except pymysql.err.ProgrammingError:
         payment_table_create(connection)
         with connection.cursor() as cursor:
@@ -62,7 +62,7 @@ def add_invoice(connection, title: str, description: str, payload: str, price: i
                         f" '{description}', '{payload}', {price});"
             cursor.execute(add_query)
             connection.commit()
-            print("invoice added...")
+            # print("invoice added...")
 
 
 def remove_invoice(connection, title: str):
@@ -71,14 +71,14 @@ def remove_invoice(connection, title: str):
             add_query = f"DELETE FROM invoice_table WHERE title='{title}';"
             cursor.execute(add_query)
             connection.commit()
-            print("invoice removed...")
+            # print("invoice removed...")
     except pymysql.err.ProgrammingError:
         payment_table_create(connection)
         with connection.cursor() as cursor:
             add_query = f"DELETE FROM invoice_table WHERE title='{title}';"
             cursor.execute(add_query)
             connection.commit()
-            print("invoice removed...")
+            # print("invoice removed...")
 
 
 def get_data(connection):
@@ -87,7 +87,7 @@ def get_data(connection):
             add_query = f"SELECT * FROM invoice_table;"
             cursor.execute(add_query)
             connection.commit()
-            print("data got...")
+            # print("data got...")
             result = cursor.fetchall()
             return result
     except pymysql.err.ProgrammingError:
@@ -96,7 +96,7 @@ def get_data(connection):
             add_query = f"SELECT * FROM invoice_table;"
             cursor.execute(add_query)
             connection.commit()
-            print("data got...")
+            # print("data got...")
             result = cursor.fetchall()
             return result
 
