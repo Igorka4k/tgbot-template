@@ -12,8 +12,8 @@ from base_template.some_tools import *
 from base_template.keyboards import *
 from base_template.constants import *
 
-if path.exists('.env'):  # Переменные окружения хранятся в основной директории проекта
-    load_dotenv('.env')
+if path.exists('../.env'):  # Переменные окружения хранятся в основной директории проекта
+    load_dotenv('../.env')
 else:
     raise ImportError("Can't import environment variables")
 
