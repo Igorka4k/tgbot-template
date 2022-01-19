@@ -42,14 +42,14 @@ def start(update, ctx):
         ctx.user_data["full_name"] = update.message.from_user["full_name"]
 
     connection = db_connect()
-
-    text = ""
-
+    text = ''
     if not queries.is_authorized(connection, update.message.from_user["tg_account"]):
         queries.new_user_adding(connection, ctx.user_data["full_name"], ctx.user_data["tg_account"])
-        text += welcome_msg
+        keyboard = ReplyKeyboardMarkup([[]], resize_keyboard=True)
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=welcome_msg,
+                             reply_markup=keyboard)
     else:
-        text += authorized_already_msg
+        text = authorized_already_msg
     text += main_menu_nav_msg
 
     if ctx.user_data["is_admin"]:
@@ -101,11 +101,11 @@ def menu(update, ctx):
         ctx.user_data["price_info"] = {i['title']: i for i in data}
         prices = [(i["title"], i["price"]) for i in data]
         # в callback_data попробовать передать ctx.user_data["state"] для реализации новой логики меню.
-        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(f"{i[0]} ({i[1]} руб)",
-                                                               callback_data=i[0])] for i in prices])
+        keyboard = ReplyKeyboardMarkup([[f"{i[0]} ({i[1]} руб)"] for i in prices] + [[back_to_menu_btn]])
         ctx.bot.send_message(chat_id=update.effective_chat.id,
                              text=f"{price_checklist_msg}",
                              reply_markup=keyboard)
+        return "check_price_list"
 
     elif msg == all_the_text_editor_btn:
         keyboard = ReplyKeyboardMarkup(ALL_THE_TEXT_EDITOR_MENU, resize_keyboard=True)
@@ -257,6 +257,24 @@ def certificates_admin(update, ctx):
     return 'certificates'
 
 
+def check_price_list(update, ctx):
+    msg = update.message.text
+    if msg == back_to_menu_btn:
+        if ctx.user_data["is_admin"]:
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_msg,
+                                 reply_markup=ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__admin, resize_keyboard=True))
+        else:
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_msg,
+                                 reply_markup=ReplyKeyboardMarkup(MAIN_MENU_KEYBOARD__user, resize_keyboard=True))
+        return 'menu'
+    msg = ' '.join(msg.split()[:-2])
+    if msg in ctx.user_data["price_info"].keys():
+        ctx.bot.send_message(chat_id=update.effective_chat.id,
+                             text=f"Услуга: {msg}\n"
+                                  f"Цена: {ctx.user_data['price_info'][msg]['price']} рублей\n"
+                                  f"Описание: {ctx.user_data['price_info'][msg]['description']}")
+
+
 def all_the_callback(update, ctx):
     query = update.callback_query
     data = query.data
@@ -336,16 +354,6 @@ def all_the_callback(update, ctx):
             msg_to_send = f"Выберите/Уберите нерабочие дни. ({', '.join(days_off)})"
         query.edit_message_text(text=msg_to_send,
                                 reply_markup=keyboard)
-
-    if data == "укладка":
-        price_info = ctx.user_data["price_info"]
-        # print(f"{price_info[data]['img']}\n")  # картинка
-        query.edit_message_text(text=f"Раздел: {price_info[data]['title']} Цена: {price_info[data]['price']}\n"
-                                     f"{price_info[data]['description']}")
-    elif data == "чистка":
-        price_info = ctx.user_data["price_info"]
-        query.edit_message_text(text=f"Раздел: {price_info[data]['title']} Цена: {price_info[data]['price']}\n"
-                                     f"{price_info[data]['description']}")
 
 
 def yes_no_handler(update, ctx):
@@ -438,6 +446,10 @@ main_menu_conv_handler = ConversationHandler(
         "set_replica_handler": [
             MessageHandler(Filters.text & (~Filters.command), set_new_replica_text)
         ],
+
+        "check_price_list": [
+            MessageHandler(Filters.text & (~Filters.command), check_price_list)
+        ]
     },
     fallbacks=[start_handler],
 )
