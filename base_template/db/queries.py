@@ -282,6 +282,15 @@ def clear_appointments(connection):
         connection.commit()
 
 
+def clear_appointment(connection, info):
+    time, date = [i for i in info]
+    with connection.cursor() as cursor:
+        clear_query = f"DELETE FROM `online_dates` WHERE time = '{time}' AND date = '{date}'"
+        cursor.execute(clear_query)
+        connection.commit()
+        print(f"The appointment from {date}, {time} was cleared from database.")
+
+
 # # place for query tests: (не удалять)
 #
 #
