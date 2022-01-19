@@ -1,4 +1,4 @@
-from base_template.old_bot import dispatcher
+from base_template.bot import dispatcher
 from telegram.ext import ConversationHandler, CommandHandler
 import json
 
