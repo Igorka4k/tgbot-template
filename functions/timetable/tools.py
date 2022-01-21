@@ -10,6 +10,11 @@ from os import environ
 
 def db_connect():
     try:
+        print(environ.get('MYSQL_URL'),
+              environ.get('MYSQL_PORT'),
+              environ.get("MYSQL_PASS"),
+              environ.get("MYSQL_BASE_NAME"),
+              environ.get("MYSQL_USER"))
         connection = pymysql.connect(
             host=environ.get('MYSQL_URL'),
             port=int(environ.get('MYSQL_PORT')),
@@ -22,6 +27,11 @@ def db_connect():
     except Exception as ex:
         print("connection refused.")
         print(ex)
+        print(environ.get('MYSQL_URL'),
+              environ.get('MYSQL_PORT'),
+              environ.get("MYSQL_PASS"),
+              environ.get("MYSQL_BASE_NAME"),
+              environ.get("MYSQL_USER"))
         return False
 
 
