@@ -11,8 +11,8 @@ try:
         load_dotenv('.env')
     else:
         raise ImportError("Can't import environment variables")
-except ImportError:
-
+except ImportError as ex:
+    print(ex)
 if __name__ == "__main__":
     from base_template.bot import *
 
