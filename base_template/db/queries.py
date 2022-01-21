@@ -66,6 +66,9 @@ def get_working_hours(connection):
         get_working_hours_query = f"SELECT * FROM working_hours"
         cursor.execute(get_working_hours_query)
         working_hours = cursor.fetchone()
+        if working_hours is None:
+            working_time_adding(connection, begin_time="08:00", end_time='21:00')
+            return get_working_hours(connection)
         return working_hours
 
 
@@ -104,6 +107,9 @@ def get_timetable_range(connection):
         query = "SELECT * FROM `timetable_range`"
         cursor.execute(query)
         timetable_range = cursor.fetchone()
+        if timetable_range is None:
+            set_timetable_range(connection, mode=90)
+            return get_timetable_range(connection)
         return int(timetable_range["mode"])
 
 
@@ -172,7 +178,11 @@ def get_days_off(connection):
     with connection.cursor() as cursor:
         query = "SELECT * FROM `days_off`"
         cursor.execute(query)
-        values = list(cursor.fetchall()[0].values())[1:]
+        values = cursor.fetchall()
+        if not len(values):
+            set_days_off(connection, day='ПН')
+            return get_days_off(connection)
+        values = list(values[0].values())[1:]
         days_off = [weekdays_header_ru[i] for i in range(len(weekdays_header_ru)) if values[i] == 1]
         return days_off
 
@@ -193,8 +203,6 @@ def get_holidays(connection):
         query = "SELECT * FROM `holidays`"
         cursor.execute(query)
         current_holidays = cursor.fetchone()
-        if current_holidays is None:
-            return None
         return current_holidays
 
 

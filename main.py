@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from os import path, environ
 
-# from boto.s3.connection import S3Connection
+from boto.s3.connection import S3Connection
 # s3 = S3Connection("AKIAZJNUYZQO2RYWC36S", 'yJNqQQsQHziLlKmvq01gtrHFjycnlPhuuo/0apql')
 
 try:
@@ -16,6 +16,12 @@ except ImportError as ex:
 if __name__ == "__main__":
     from base_template.bot import *
 
+    from base_template.db.sql_init import initialize
+    initialize(db_connect())
+
     updater.start_polling()
     updater.idle()
     # updater.job_queue.start()
+
+
+# mysql://b12116c5e68eb3:69ed2230@us-cdbr-east-05.cleardb.net/heroku_3e91460fccadc94?reconnect=true

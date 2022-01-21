@@ -56,7 +56,6 @@ def get_month_keys(do_timetable_settings, timetable_settings=None):
             correctly_month_values.add(start)
             start += 1
         month_range = correctly_month_values
-
         # holidays_range = list(map(lambda x: x.month, ExceptionCog().get_holidays_range(timetable_settings["holidays"])))
     rows = []
     row = []
@@ -104,7 +103,7 @@ def get_days_keys(year, months_num, do_timetable_settings=False, timetable_setti
                 iter_date = datetime.date(year=year, month=months_num, day=num)
                 if timetable_range[0] <= iter_date <= timetable_range[-1] and \
                         i not in days_off and \
-                        not holidays_range[0] <= iter_date <= holidays_range[-1]:
+                        (holidays_range is None or not holidays_range[0] <= iter_date <= holidays_range[-1]):
                     row.append(InlineKeyboardButton(str(num), callback_data=num))
                 else:
                     row.append(InlineKeyboardButton(" ", callback_data="pass"))

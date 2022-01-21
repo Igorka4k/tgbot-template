@@ -104,13 +104,18 @@ class ExceptionCog:
         return [datetime.date.today(), range_itself]
 
     def get_days_off_indexes(self, the_days_off):
+        if the_days_off is None:
+            return [i for i in range(7)]
         days_off_indexes = []
+
         for i in range(7):
             if weekdays_header_ru[i] in the_days_off:
                 days_off_indexes.append(i)
         return days_off_indexes
 
     def get_holidays_range(self, holidays):
+        if holidays is None:
+            return None
         begin_date = list(map(int, holidays["begin_date"].split("-")))
         begin_date = datetime.date(year=begin_date[0], month=begin_date[1], day=begin_date[2])
         end_date = list(map(int, holidays["end_date"].split("-")))

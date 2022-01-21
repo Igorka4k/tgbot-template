@@ -71,7 +71,6 @@ def calendar_date_callback(update, ctx):  # пока не используетс
         ctx.user_data["date_of_appointment"].extend([year, month, day])  # (Порядок: год-месяц-день)
 
         # time_choosing redirect:
-        print("I AM HERE")
         keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(
             begin=ctx.user_data["timetable_settings"]["working_hours"]["begin"],
             end=ctx.user_data["timetable_settings"]["working_hours"]["end"],
