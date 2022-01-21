@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="fa4e24a1-80e9-46ed-b0f9-e354b5cbcae8" name="Changes" comment="heroku-test-deploy part6" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="sushchik_fail" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+    <option name="RESET_MODE" value="HARD" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
+  <component name="ProjectId" id="1yRoqUj5qWlOfwfoCnfytNkORIs" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="restartRequiresConfirmation" value="false" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Igorase\Programming\python\some projects\Tg_monopoly\tgbot-template" />
+      <recent name="C:\Igorase\Programming\python\some projects\Tg_monopoly\tgbot-template\base_template" />
+      <recent name="C:\Igorase\Programming\python\some projects\Tg_monopoly\tgbot-template\base_template\data" />
+      <recent name="C:\Igorase\Programming\python\some projects\Tg_monopoly\tgbot-template\functions\timetable" />
+      <recent name="C:\Igorase\Programming\python\some projects\Tg_monopoly\tgbot-template\base-template\data" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.main">
+    <configuration name="bot (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="tgbot-template" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/base_template" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/base_template/bot.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="bot" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="tgbot-template" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/base_template" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="C:\Igorase\Programming\python\some projects\Tg_monopoly\tgbot-template\base_template\bot.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="tgbot-template" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="queries (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="tgbot-template" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/base_template/db" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/base_template/db/queries.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="test (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="tgbot-template" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/base_template" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/base_template/test.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.main" />
+        <item itemvalue="Python.bot (1)" />
+        <item itemvalue="Python.bot" />
+        <item itemvalue="Python.queries (1)" />
+        <item itemvalue="Python.test (1)" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="fa4e24a1-80e9-46ed-b0f9-e354b5cbcae8" name="Changes" comment="" />
+      <created>1632223953078</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1632223953078</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Base added.">
+      <created>1632225682062</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1632225682062</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Dialog data save demonstration.">
+      <created>1632237495938</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1632237495938</updated>
+    </task>
+    <task id="LOCAL-00003" summary="template update:&#10;- file structure updated.&#10;- documentation gererator added.">
+      <created>1632387153320</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1632387153320</updated>
+    </task>
+    <task id="LOCAL-00004" summary="mysql connected, but i`ve to go to sleep, that`s why its only connected.">
+      <created>1632520181874</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1632520181874</updated>
+    </task>
+    <task id="LOCAL-00005" summary="- MySQL database connected.&#10;- file-structure updated.">
+      <created>1632574007579</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1632574007579</updated>
+    </task>
+    <task id="LOCAL-00006" summary="- Database-to-bot connection added.">
+      <created>1632575794596</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1632575794596</updated>
+    </task>
+    <task id="LOCAL-00007" summary="- /get_dates command added, data print">
+      <created>1632579517990</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1632579517990</updated>
+    </task>
+    <task id="LOCAL-00008" summary="- visual online-timetable added.&#10;- menu-navigation initialize.">
+      <created>1632769702535</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1632769702535</updated>
+    </task>
+    <task id="LOCAL-00009" summary="- time-sorting debugged.&#10;- exception-handlers initialed.&#10;- menu-navigation corrected.">
+      <created>1632865442383</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1632865442383</updated>
+    </task>
+    <task id="LOCAL-00010" summary="- govno-code fixed.&#10;- db connected to the online-timetable.&#10;- user adding into db realised.">
+      <created>1632919781711</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1632919781711</updated>
+    </task>
+    <task id="LOCAL-00011" summary="- A small commit:&#10;- user-interface tested.&#10;- command-description added.">
+      <created>1633379070157</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1633379070157</updated>
+    </task>
+    <task id="LOCAL-00012" summary="different structure unification into one template.">
+      <created>1633719818641</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1633719818641</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Timetable updated. Big choosing added.">
+      <created>1633965320265</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1633965320265</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Mihendy gay">
+      <created>1635087500616</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1635087500617</updated>
+    </task>
+    <task id="LOCAL-00015" summary="conversation handlers errors fix">
+      <created>1635347262683</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1635347262699</updated>
+    </task>
+    <task id="LOCAL-00016" summary="- online timetable included into the menu-tree&#10;- online timetable settings menu added&#10;- make/delete appointment available&#10;- info of the last appointment available&#10;- nested menu redirects added">
+      <created>1635757210677</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1635757210677</updated>
+    </task>
+    <task id="LOCAL-00017" summary="- menu-states added.&#10;- constants added.&#10;- working hours choosing added.&#10;- working hours connected to sql.">
+      <created>1636559304570</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1636559304570</updated>
+    </task>
+    <task id="LOCAL-00018" summary="- Timetable finished! (V 1.0):&#10;* customization timetable options.&#10;* real-time customization from admin to user.&#10;* all the scripts tested myself.&#10;&#10;- new constants added into the constants.py.&#10;- calendar module rewrite.&#10;- decorators.py updated.">
+      <created>1636981611089</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1636981611089</updated>
+    </task>
+    <task id="LOCAL-00019" summary="- notifies before the day and before two hours added (beta).">
+      <created>1638126258547</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1638126258548</updated>
+    </task>
+    <task id="LOCAL-00020" summary="- fix current version.&#10;- more ideas about admin managing realized.&#10;- context.py updated.">
+      <created>1640015105707</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1640015105707</updated>
+    </task>
+    <task id="LOCAL-00021" summary="- fix working_hours algorithm&#10;- night appointments are available">
+      <created>1641230658338</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1641230658338</updated>
+    </task>
+    <task id="LOCAL-00022" summary="- between_time_range settings added.&#10;- fixed the work of the decorators.&#10;- fixed working_hours algorithm.">
+      <created>1641291271807</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1641291271807</updated>
+    </task>
+    <task id="LOCAL-00023" summary="- little debugging of my previous commit.&#10;- menu context design upgraded.">
+      <created>1641292916539</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1641292916539</updated>
+    </task>
+    <task id="LOCAL-00024" summary="heroku-test-deploy">
+      <created>1642581486243</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1642581486243</updated>
+    </task>
+    <task id="LOCAL-00025" summary="heroku-test-deploy part2">
+      <created>1642585619638</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1642585619638</updated>
+    </task>
+    <task id="LOCAL-00026" summary="heroku-test-deploy part3">
+      <created>1642592384356</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1642592384356</updated>
+    </task>
+    <task id="LOCAL-00027" summary="heroku-test-deploy part4">
+      <created>1642593283051</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1642593283051</updated>
+    </task>
+    <task id="LOCAL-00028" summary="heroku-test-deploy part5">
+      <created>1642605907231</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1642605907231</updated>
+    </task>
+    <task id="LOCAL-00029" summary="heroku-test-deploy part6">
+      <created>1642678078747</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1642678078747</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
+    <servers />
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="com.intellij.fileTypeFactory" implementationName="*.env" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="master" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="- MySQL database connected.&#10;- file-structure updated." />
+    <MESSAGE value="- Database-to-bot connection added." />
+    <MESSAGE value="- /get_dates command added, data print" />
+    <MESSAGE value="- visual online-timetable added.&#10;- menu-navigation initialize." />
+    <MESSAGE value="- time-sorting debugged.&#10;- exception-handlers initialed.&#10;- menu-navigation corrected." />
+    <MESSAGE value="- govno-code fixed.&#10;- db connected to the online-timetable.&#10;- user adding into db realised." />
+    <MESSAGE value="- A small commit:&#10;- user-interface tested.&#10;- command-description added." />
+    <MESSAGE value="different structure unification into one template." />
+    <MESSAGE value="Timetable updated. Big choosing added." />
+    <MESSAGE value="Mihendy gay" />
+    <MESSAGE value="conversation handlers errors fix" />
+    <MESSAGE value="- online timetable included into the menu-tree&#10;- online timetable settings menu added&#10;- make/delete appointment available&#10;- info of the last appointment available&#10;- nested menu redirects added" />
+    <MESSAGE value="- menu-states added.&#10;- constants added.&#10;- working hours choosing added.&#10;- working hours connected to sql." />
+    <MESSAGE value="- Timetable finished! (V 1.0):&#10;* customization timetable options.&#10;* real-time customization from admin to user.&#10;* all the scripts tested myself.&#10;&#10;- new constants added into the constants.py.&#10;- calendar module rewrite.&#10;- decorators.py updated." />
+    <MESSAGE value="- notifies before the day and before two hours added (beta)." />
+    <MESSAGE value="- fix current version.&#10;- more ideas about admin managing realized.&#10;- context.py updated." />
+    <MESSAGE value="- fix working_hours algorithm&#10;- night appointments are available" />
+    <MESSAGE value="- between_time_range settings added.&#10;- fixed the work of the decorators.&#10;- fixed working_hours algorithm." />
+    <MESSAGE value="- little debugging of my previous commit.&#10;- menu context design upgraded." />
+    <MESSAGE value="heroku-test-deploy" />
+    <MESSAGE value="heroku-test-deploy part2" />
+    <MESSAGE value="heroku-test-deploy part3" />
+    <MESSAGE value="heroku-test-deploy part4" />
+    <MESSAGE value="heroku-test-deploy part5" />
+    <MESSAGE value="heroku-test-deploy part6" />
+    <option name="LAST_COMMIT_MESSAGE" value="heroku-test-deploy part6" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/base_template/some_tools.py</url>
+          <line>39</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/base_template/some_tools.py</url>
+          <line>45</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
