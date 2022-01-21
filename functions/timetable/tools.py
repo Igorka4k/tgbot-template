@@ -10,7 +10,7 @@ from os import environ
 
 def db_connect():
     try:
-        print(environ.get('MYSQL_URL'),
+        print('все мои команды, лол:', environ.get('MYSQL_URL'),
               environ.get('MYSQL_PORT'),
               environ.get("MYSQL_PASS"),
               environ.get("MYSQL_BASE_NAME"),
@@ -27,7 +27,7 @@ def db_connect():
     except Exception as ex:
         print("connection refused.")
         print(ex)
-        print(environ.get('MYSQL_URL'),
+        print('все мои команды, лол:', environ.get('MYSQL_URL'),
               environ.get('MYSQL_PORT'),
               environ.get("MYSQL_PASS"),
               environ.get("MYSQL_BASE_NAME"),
