@@ -1,7 +1,10 @@
+import os
+
 from dotenv import load_dotenv
 from os import path, environ
 
 from boto.s3.connection import S3Connection
+import boto
 
 try:
     if path.exists('.env'):  # Переменные окружения хранятся в основной директории проекта
@@ -9,7 +12,7 @@ try:
     else:
         raise ImportError("Can't import environment variables")
 except ImportError:
-    s3 = S3Connection()
+    s3 = boto.connect_s3()
 
 if __name__ == "__main__":
     from base_template.bot import *
