@@ -17,6 +17,9 @@ ADMIN_CHAT = list(map(int, environ.get('ADMIN_CHAT').split(',')))
 
 
 def start(update, ctx):
+    if 'is_authorized' in ctx.user_data:
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"{authorized_already_msg},"
+                                                                    f"но в тест-режиме авторизуем вас повторно.")
     ctx.user_data["is_authorized"] = True
     ctx.user_data["state"] = 'main_menu'
     ctx.user_data["make_an_appointment"] = False
@@ -39,12 +42,13 @@ def start(update, ctx):
 
     connection = db_connect()
     text = ''
-    if not queries.is_authorized(connection, update.message.from_user["tg_account"]):
+    if not queries.is_authorized(connection, ctx.user_data['tg_account']):
         queries.new_user_adding(connection, ctx.user_data["full_name"], ctx.user_data["tg_account"])
         keyboard = ReplyKeyboardMarkup([[]], resize_keyboard=True)
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=welcome_msg,
                              reply_markup=keyboard)
     else:
+        print('Авторизация:', update.message.from_user['username'])
         text = authorized_already_msg
     text += main_menu_nav_msg
 

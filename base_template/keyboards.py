@@ -1,15 +1,14 @@
 # main menu
-from functions.timetable.tools import CalendarCog, db_connect
-# from db.queries import *
+from functions.timetable.tools import CalendarCog
+from base_template.db.queries import get_working_hours, get_dates_between_range
+from functions.timetable.tools import db_connect
 from base_template.context import *
 
 MAIN_MENU_KEYBOARD__user = [[online_timetable_btn],
-                            [price_btn],
-                            [certificates_btn]]
+                            [price_btn]]
 
 MAIN_MENU_KEYBOARD__admin = [[online_timetable_btn],
                              [price_btn],
-                             [certificates_btn],
                              [offers_sending_btn]]
 # [all_the_text_editor_btn]]
 
@@ -30,10 +29,16 @@ ONLINE_TIMETABLE_SETTINGS = [[timetable_range_btn, weekends_btn, holidays_btn],
                              [working_hours_btn, dates_between_range_btn],
                              [back_btn]]
 
-ONLINE_TIMETABLE_HOURS = CalendarCog().get_hours_keyboard(  # пока не используется
-    begin="00:00",
-    end="23:59",
-    between_range=40)
+
+def online_timetable_hours():
+    working_hours = get_working_hours(db_connect())
+    between_range = get_dates_between_range(db_connect())
+    ONLINE_TIMETABLE_HOURS = CalendarCog().get_hours_keyboard(  # пока не используется
+        begin=working_hours['begin'],
+        end=working_hours['end'],
+        between_range=between_range)
+    return ONLINE_TIMETABLE_HOURS
+
 
 TIMETABLE_HOURS_ADMIN1 = CalendarCog().get_hours_keyboard(
     begin="00:00",

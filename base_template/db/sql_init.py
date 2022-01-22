@@ -222,7 +222,7 @@ def initialize(connection):
                 check_query = f"CHECK TABLE `{table}`"
                 cursor.execute(check_query)
                 result = cursor.fetchone()
-                print(result)
+                # print(result)  # инфо о таблице
                 if result['Msg_text'] != 'OK':
                     existing_tables[table](connection, table)
             print('sql initialized...')

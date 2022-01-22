@@ -3,7 +3,7 @@
 from telegram import ReplyKeyboardMarkup
 from base_template.context import *
 
-from base_template.keyboards import ONLINE_TIMETABLE_admin_menu, ONLINE_TIMETABLE_user_menu
+from base_template.keyboards import ONLINE_TIMETABLE_admin_menu, ONLINE_TIMETABLE_user_menu, online_timetable_hours
 
 
 def only_admin(func):
@@ -43,10 +43,11 @@ def only_table_values(func, collection=None, keyboard_type=None):
         if msg == back_to_menu_btn:
             ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_exc_msg)
             return
+        collection = online_timetable_hours()
         if msg not in [i[0].lower() for i in collection]:
             ctx.bot.send_message(chat_id=update.effective_chat.id,
                                  text=all_the_exc_msg)
-            return ctx.user_data["state"]
+            return "time_choosing"
         return func(update, ctx)
 
     def month_type(update, ctx):

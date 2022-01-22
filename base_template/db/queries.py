@@ -159,7 +159,6 @@ def set_days_off(connection, day):
                 "ВС": "sunday"
             }
             all_the_weekdays[0][abbr_to_month[day]] = 1 if int(all_the_weekdays[0][abbr_to_month[day]]) == 0 else 0
-            print(all_the_weekdays)
             values = []
             for i in list(all_the_weekdays[0].values())[1:]:
                 values.append(1) if i else values.append(0)
@@ -247,9 +246,9 @@ def is_authorized(connection, tg_account):
         check_query = f"SELECT * FROM `bot_subscribers` WHERE `tg_account` = '{tg_account}'"
         cursor.execute(check_query)
         result = cursor.fetchone()
-        if result is not None:
-            return True
-        return False
+        if result is None:
+            return False
+        return True
 
 
 def make_an_appointment(connection, full_name, date, time, tg_account):
@@ -270,6 +269,15 @@ def new_user_adding(connection, full_name, tg_account):
         cursor.execute(user_add_query)
         connection.commit()
         print("new user added...")
+
+
+def clear_subscribers(connection):  # USE WITH ATTENTION!
+    """ clear all the bot_subscribers """
+    with connection.cursor() as cursor:
+        clear_query = "DELETE FROM `bot_subscribers` WHERE (id)"
+        cursor.execute(clear_query)
+        connection.commit()
+        print("bot_subscribers cleared")
 
 
 def delete_appointment(connection, tg_account):

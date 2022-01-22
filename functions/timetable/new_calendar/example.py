@@ -54,7 +54,7 @@ def get_month_keys(do_timetable_settings, timetable_settings=None):
             if start > 12:
                 start = 1
             correctly_month_values.add(start)
-            start += 1
+            start += 1 if start != 1 else 0
         month_range = correctly_month_values
         # holidays_range = list(map(lambda x: x.month, ExceptionCog().get_holidays_range(timetable_settings["holidays"])))
     rows = []

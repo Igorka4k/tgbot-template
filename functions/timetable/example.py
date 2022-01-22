@@ -34,6 +34,11 @@ def timetable_script_begin(update, ctx):
         "holidays": queries.get_holidays(db_connect()),
         "notifies": queries.get_notifies(db_connect())
     }
+    # print(ctx.user_data["timetable_settings"]['timetable_range'],
+    #       ctx.user_data["timetable_settings"]['working_hours'],
+    #       ctx.user_data['timetable_settings']['days_off'],
+    #       ctx.user_data['timetable_settings']['holidays'],
+    #       ctx.user_data['timetable_settings']['notifies'])
     ctx.user_data["make_an_appointment"] = True
     return calendar_build(update, ctx, do_timetable_settings=True)
 
@@ -150,21 +155,21 @@ def day_choosing(update, ctx):
 
 
 # метод partial тут скрыт, это спецом
-# @functools.partial(only_table_values,
-#                    collection=ONLINE_TIMETABLE_HOURS,
-#                    keyboard_type="time")
+@functools.partial(only_table_values,
+                   collection=online_timetable_hours(),
+                   keyboard_type="time")
 def time_choosing(update, ctx):
     msg = update.message.text
-    if [msg] not in ctx.user_data["only_table_val"]:
-        keyboard = ReplyKeyboardMarkup(ctx.user_data["only_table_val"], resize_keyboard=True)
-        ctx.bot.send_message(chat_id=update.effective_chat.id,
-                             text=all_the_exc_msg,
-                             reply_markup=keyboard)
-        return "time_choosing"
-    if msg == back_btn:
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_comeback_msg,
-                             reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu, resize_keyboard=True))
-        return 'online_appointment'
+    # if [msg] not in ctx.user_data["only_table_val"]:
+    #     keyboard = ReplyKeyboardMarkup(ctx.user_data["only_table_val"], resize_keyboard=True)
+    #     ctx.bot.send_message(chat_id=update.effective_chat.id,
+    #                          text=all_the_exc_msg,
+    #                          reply_markup=keyboard)
+    #     return "time_choosing"
+    # if msg == back_btn:
+    #     ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_comeback_msg,
+    #                          reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu, resize_keyboard=True))
+    #     return 'online_appointment'
     if not ctx.user_data["is_date_choice"]:
         return "time_choosing"
     ctx.user_data["date_of_appointment"].append(msg)
