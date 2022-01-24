@@ -197,6 +197,45 @@ def set_holidays(connection, first_date, second_date):
         print("new holidays have been set..")
 
 
+def switch_timetable_working(connection):
+    with connection.cursor() as cursor:
+        query = 'SELECT * FROM `is_timetable_working`'
+        cursor.execute(query)
+        try:
+            value = int(cursor.fetchone()['value'])
+        except Exception as ex:
+            print("ATTENTION!", ex)
+            set_query = f"INSERT INTO `is_timetable_working` (value) VALUE('0'); "
+            cursor.execute(set_query)
+            connection.commit()
+            print("value has been initialized..")
+            return
+        # clearing:
+        clear_query = 'DELETE FROM `is_timetable_working` WHERE id'
+        cursor.execute(clear_query)
+        connection.commit()
+        print("i am here doshel")
+        # new value setting:
+        if value == 1:
+            set_query = f"INSERT INTO `is_timetable_working` (value)" \
+                        f" VALUES('0');"
+        else:
+            set_query = f"INSERT INTO `is_timetable_working` (value)" \
+                        f" VALUES('1');"
+        cursor.execute(set_query)
+        connection.commit()
+        print("timetable_working switched.")
+        return True if value == 0 else False
+
+
+def get_is_timetable_working(connection):
+    with connection.cursor() as cursor:
+        get_query = 'SELECT * FROM `is_timetable_working`'
+        cursor.execute(get_query)
+        result = cursor.fetchone()['value']
+        return True if result == 1 else False
+
+
 def get_holidays(connection):
     with connection.cursor() as cursor:
         query = "SELECT * FROM `holidays`"

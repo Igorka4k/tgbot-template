@@ -12,7 +12,6 @@ from base_template.some_tools import *
 from base_template.keyboards import *
 from base_template.constants import *
 
-
 ADMIN_CHAT = list(map(int, environ.get('ADMIN_CHAT').split(',')))
 
 
@@ -27,6 +26,7 @@ def start(update, ctx):
     ctx.user_data["tg_account"] = update.message.from_user["username"]
     ctx.user_data["is_admin"] = True if update.effective_chat.id in ADMIN_CHAT else False
     ctx.user_data["connection"] = db_connect()
+    ctx.user_data['full_name'] = ''
 
     # ==== timetable_settings:
     ctx.user_data["timetable_settings"] = {
@@ -35,10 +35,13 @@ def start(update, ctx):
         "days_off": queries.get_days_off(db_connect()),
         "holidays": queries.get_holidays(db_connect()),
     }
-    if update.message.from_user["full_name"] is None:
-        ctx.user_data["full_name"] = anonymous_name
-    else:
-        ctx.user_data["full_name"] = update.message.from_user["full_name"]
+
+    if update.message.from_user['first_name'] is not None:
+        ctx.user_data['full_name'] += update.message.from_user['first_name'] + " "
+    if update.message.from_user['last_name'] is not None:
+        ctx.user_data['full_name'] += update.message.from_user['last_name']
+    if len(ctx.user_data['full_name']) == 0:
+        ctx.user_data['full_name'] = anonymous_name
 
     connection = db_connect()
     text = ''
@@ -68,11 +71,14 @@ def menu(update, ctx):
         ctx.user_data["state"] = "online_appointment"
         if ctx.user_data["is_admin"]:
             ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_menu_nav_msg__admin,
-                                 reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu,
-                                                                  resize_keyboard=True))
-        else:
+                                 reply_markup=ReplyKeyboardMarkup(
+                                     online_timetable_admin_menu(get_is_timetable_working(db_connect())),
+                                     resize_keyboard=True))
+        elif get_is_timetable_working(db_connect()):
             ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_menu_nav_msg__user,
                                  reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
+        else:
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text=make_appointment_exc_msg)
         return 'online_appointment'
 
     elif msg == certificates_btn:
@@ -118,6 +124,7 @@ def menu(update, ctx):
 
 
 def online_appointment(update, ctx):
+    global ONLINE_TIMETABLE_admin_menu
     msg = update.message.text
     if msg == back_to_menu_btn:
         ctx.user_data['state'] = "menu"
@@ -136,10 +143,25 @@ def online_appointment(update, ctx):
 
         elif msg == settings_btn:
             ctx.user_data["state"] = 'online_appointment_settings'
-            keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_SETTINGS, resize_keyboard=True)
+            keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu, resize_keyboard=True)
             ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_editor_nav_msg,
                                  reply_markup=keyboard)
             return "online_appointment_settings"
+
+        elif msg == off_bot_btn:
+            ONLINE_TIMETABLE_admin_menu = [[check_appointments_btn], [settings_btn], [on_bot_btn], [back_to_menu_btn]]
+            keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_admin_menu, resize_keyboard=True)
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text=bot_has_been_off_msg,
+                                 reply_markup=keyboard)
+            switch_timetable_working(db_connect())
+            return "online_appointment"
+        elif msg == on_bot_btn:
+            ONLINE_TIMETABLE_SETTINGS = [[check_appointments_btn], [settings_btn], [off_bot_btn], [back_to_menu_btn]]
+            keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_SETTINGS, resize_keyboard=True)
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text=bot_has_been_on_msg,
+                                 reply_markup=keyboard)
+            switch_timetable_working(db_connect())
+            return "online_appointment"
 
     elif not ctx.user_data["is_admin"]:
 
@@ -405,7 +427,8 @@ main_menu_conv_handler = ConversationHandler(
                 f'{offers_sending_btn}|{price_btn}|{all_the_text_editor_btn})$')
             & (~Filters.command), menu)],
         "online_appointment": [
-            MessageHandler(Filters.regex(f'^({settings_btn}|{check_appointments_btn}|{back_to_menu_btn})$')
+            MessageHandler(Filters.regex(
+                f'^({off_bot_btn}|{on_bot_btn}|{settings_btn}|{check_appointments_btn}|{back_to_menu_btn})$')
                            & (~Filters.command), online_appointment),
             MessageHandler(Filters.regex(
                 f'^({make_appointment_btn}|{appointment_info_btn}|{cancel_appointment_btn}|{back_to_menu_btn})$'),
@@ -472,4 +495,3 @@ dispatcher.add_handler(all_the_callback_handler)
 dispatcher.add_handler(CallbackQueryHandler(callback=keyboard_callback_handler, pass_chat_data=True))
 
 dispatcher.add_handler(unknown_handler)
-

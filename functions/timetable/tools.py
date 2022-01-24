@@ -101,7 +101,7 @@ class ExceptionCog:
 
     def get_timetable_range(self, timetable_range):
         range_itself = datetime.date.today() + relativedelta(days=timetable_range)
-        return [datetime.date.today(), range_itself]
+        return [datetime.date.today() + relativedelta(days=1), range_itself]
 
     def get_days_off_indexes(self, the_days_off):
         if the_days_off is None:

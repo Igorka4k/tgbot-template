@@ -3,7 +3,7 @@
 from telegram import ReplyKeyboardMarkup
 from base_template.context import *
 
-from base_template.keyboards import ONLINE_TIMETABLE_admin_menu, ONLINE_TIMETABLE_user_menu, online_timetable_hours, \
+from base_template.keyboards import online_timetable_admin_menu, ONLINE_TIMETABLE_user_menu, online_timetable_hours, \
     TIMETABLE_HOURS_ADMIN1
 
 

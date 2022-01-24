@@ -20,7 +20,14 @@ MONTH_CHOOSING_KEYBOARD = [["(текущий месяц)"], ["январь"], ["
                            ["май"], ["июнь"], ["июль"], ["август"],
                            ["сентябрь"], ["октябрь"], ["ноябрь"], ["декабрь"], [back_to_menu_btn]]
 
-ONLINE_TIMETABLE_admin_menu = [[check_appointments_btn], [settings_btn], [back_to_menu_btn]]
+
+def online_timetable_admin_menu(query1):
+    if query1:
+        ONLINE_TIMETABLE_admin_menu = [[check_appointments_btn], [settings_btn], [off_bot_btn], [back_to_menu_btn]]
+    else:
+        ONLINE_TIMETABLE_admin_menu = [[check_appointments_btn], [settings_btn], [on_bot_btn], [back_to_menu_btn]]
+    return ONLINE_TIMETABLE_admin_menu
+
 
 ONLINE_TIMETABLE_user_menu = [[make_appointment_btn], [appointment_info_btn, cancel_appointment_btn],
                               [back_to_menu_btn]]

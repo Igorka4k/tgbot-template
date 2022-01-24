@@ -204,6 +204,21 @@ def my_test_table_create(connection, title):
             print(ex)
 
 
+def is_timetable_working_table_create(connection, title):
+    """table init"""
+    with connection.cursor() as cursor:
+        try:
+            table_create_query = f"CREATE TABLE {title} (" \
+                                 "id INT AUTO_INCREMENT," \
+                                 "value VARCHAR(1) NOT NULL," \
+                                 "PRIMARY KEY (id));"
+            cursor.execute(table_create_query)
+            connection.commit()
+            print("table added...")
+        except Exception as ex:
+            print(ex)
+
+
 def initialize(connection):
     existing_tables = {'between_range': between_range_table_create,
                        'bot_subscribers': bot_subscribers_table_create,
@@ -215,7 +230,8 @@ def initialize(connection):
                        'price': price_table_create,
                        'replicas': replicas_table_create,
                        'timetable_range': timetable_range_table_create,  # 'testing_table': my_test_table_create,
-                       'working_hours': working_hours_table_create}
+                       'working_hours': working_hours_table_create,
+                       'is_timetable_working': is_timetable_working_table_create}
     with connection.cursor() as cursor:
         try:
             for table in existing_tables.keys():
