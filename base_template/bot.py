@@ -74,11 +74,11 @@ def menu(update, ctx):
                                  reply_markup=ReplyKeyboardMarkup(
                                      online_timetable_admin_menu(get_is_timetable_working(db_connect())),
                                      resize_keyboard=True))
-        elif get_is_timetable_working(db_connect()):
+        else:  # FIX
             ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_menu_nav_msg__user,
                                  reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
-        else:
-            ctx.bot.send_message(chat_id=update.effective_chat.id, text=make_appointment_exc_msg)
+        # else:
+        #     ctx.bot.send_message(chat_id=update.effective_chat.id, text=make_appointment_exc_msg)
         return 'online_appointment'
 
     elif msg == certificates_btn:
@@ -139,7 +139,7 @@ def online_appointment(update, ctx):
 
     elif ctx.user_data["is_admin"]:
         if msg == check_appointments_btn:
-            get_dates(update, ctx)
+            ctx.bot.send_message(chat_id=update.effective_chat.id, text=get_data(db_connect()))
 
         elif msg == settings_btn:
             ctx.user_data["state"] = 'online_appointment_settings'

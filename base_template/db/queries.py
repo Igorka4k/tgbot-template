@@ -32,6 +32,14 @@ def get_data(connection):
         return f"Кол-во записей: {count}\n\n" + '\n\n'.join(formatting_data)
 
 
+def get_dates(connection):
+    with connection.cursor() as cursor:
+        get_dates_query = 'SELECT * FROM online_dates'
+        cursor.execute(get_dates_query)
+        rows = cursor.fetchall()
+        return rows
+
+
 def add_service_to_price(connection, title, price, description=None, img=None):
     # if description is None:
     #     description = "-"
@@ -233,7 +241,8 @@ def get_is_timetable_working(connection):
         get_query = 'SELECT * FROM `is_timetable_working`'
         cursor.execute(get_query)
         result = cursor.fetchone()['value']
-        return True if result == 1 else False
+        print('value is', result)
+        return True if result == "1" else False
 
 
 def get_holidays(connection):

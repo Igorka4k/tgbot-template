@@ -79,7 +79,8 @@ def calendar_date_callback(update, ctx):  # пока не используетс
         keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(
             begin=ctx.user_data["timetable_settings"]["working_hours"]["begin"],
             end=ctx.user_data["timetable_settings"]["working_hours"]["end"],
-            between_range=queries.get_dates_between_range(db_connect())
+            between_range=queries.get_dates_between_range(db_connect()),
+            date=ctx.user_data['date_of_appointment']
         ), resize_keyboard=True)
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=time_choosing_tip_msg, reply_markup=keyboard)
         ctx.user_data["is_date_choice"] = True

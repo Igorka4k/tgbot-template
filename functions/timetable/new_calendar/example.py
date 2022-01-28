@@ -57,24 +57,32 @@ def get_month_keys(do_timetable_settings, timetable_settings=None):
                 start = 1
             correctly_month_values.add(start)
             start += 1 if start != 1 else 0
+        month_range = correctly_month_values
         # ниже попытки решить проблему с отпуском на несколько месяцев((
-        # month_range = correctly_month_values
-        # holidays_range = list(ExceptionCog().get_holidays_range(queries.get_holidays(db_connect())))
-        # holidays_days = (holidays_range[-1] - holidays_range[0]).days
-        # holidays_range = [holidays_range[0] + relativedelta(days=i) for i in range(0, holidays_days + 1)]
+        holidays_range = list(ExceptionCog().get_holidays_range(queries.get_holidays(db_connect())))
+        holidays_days = (holidays_range[-1] - holidays_range[0]).days
+        holidays_range = [holidays_range[0] + relativedelta(days=i) for i in range(0, holidays_days + 1)]
+
     rows = []
     row = []
     for i in range(1, 12 + 1):
         shifting = i - 1
         if shifting == 0:
             shifting = 12
+        start_month_date = datetime.date(datetime.datetime.now().year, shifting, 1)
+        end_month_date = datetime.date(datetime.datetime.now().year, shifting, 1) + relativedelta(
+            months=1) - relativedelta(days=1)
+        days_in_month_count = end_month_date.day
+        month_dates = [datetime.date(datetime.datetime.now().year, shifting, i)
+                       for i in range(1, days_in_month_count)]
+        
         if do_timetable_settings and shifting in month_range and shifting not in holidays_range:
             row.append(month_abbr_ru[shifting])
         elif not do_timetable_settings:
             row.append(month_abbr_ru[shifting])
         if i % 3 == 0:
             rows.append([InlineKeyboardButton(x, callback_data=month_ru.index(x) + 1) for x in row])
-            row.clear()
+        row.clear()
     return rows
 
 
