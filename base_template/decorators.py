@@ -44,10 +44,6 @@ def only_table_values(func, collection=None, keyboard_type=None):
         if msg == back_to_menu_btn:
             ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_exc_msg)
             return
-        if not ctx.user_data['is_admin']:
-            collection = online_timetable_hours()
-        else:
-            collection = TIMETABLE_HOURS_ADMIN1
         if msg not in [i[0].lower() for i in collection]:
             ctx.bot.send_message(chat_id=update.effective_chat.id,
                                  text=all_the_exc_msg)

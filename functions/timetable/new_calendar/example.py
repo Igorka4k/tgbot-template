@@ -10,6 +10,8 @@ import calendar
 
 
 def calendar_build(update, ctx, entry_state="month", do_timetable_settings=False):
+    """ генерация календаря, с возможностью конфигурации """
+    # do_timetable_settings - применять или нет ограничительные на дату настройки, установленные админом
     # user_data init:
     ctx.user_data["date_of_appointment"] = []
     ctx.user_data["is_date_choice"] = False
@@ -45,20 +47,36 @@ def get_month_keys(do_timetable_settings, timetable_settings=None):
     if do_timetable_settings:
         month_range = list(
             map(lambda x: x.month, ExceptionCog().get_timetable_range(timetable_settings["timetable_range"])))
-
+        print("doing_timetable_settings")
         start = month_range[0]
         end = month_range[1]
         correctly_month_values = set()
         correctly_month_values.add(end)
+
         if start == end:
-            start += 1
-        while start != end:
-            if start > 12:
-                start = 1
-            correctly_month_values.add(start)
-            start += 1 if start != 1 else 0
+            for i in range(1, 13):
+                correctly_month_values.add(i)
+        elif start < end:
+            for i in range(start, end + 1):
+                correctly_month_values.add(i)
+        elif start > end:
+            for i in range(1, 13):
+                if i <= end or i >= start:
+                    correctly_month_values.add(i)
+
+        # тупой алгоритм, нужно будет переписать
+        # while start != end:
+        #     print('infinity(')
+        #     if start > 12:
+        #         start = 1
+        #     correctly_month_values.add(start)
+        #     if start != 1 and start not in correctly_month_values:
+        #     start += 1 if start != 1 else 0
+        # тупой алгоритм, нужно будет переписать
+
         month_range = correctly_month_values
-        # ниже попытки решить проблему с отпуском на несколько месяцев((
+
+        # ниже попытки решить проблему с отпуском на несколько месяцев
         holidays_range = list(ExceptionCog().get_holidays_range(queries.get_holidays(db_connect())))
         holidays_days = (holidays_range[-1] - holidays_range[0]).days
         holidays_range = [holidays_range[0] + relativedelta(days=i) for i in range(0, holidays_days + 1)]
@@ -76,13 +94,13 @@ def get_month_keys(do_timetable_settings, timetable_settings=None):
         month_dates = [datetime.date(datetime.datetime.now().year, shifting, i)
                        for i in range(1, days_in_month_count)]
         
-        if do_timetable_settings and shifting in month_range and shifting not in holidays_range:
+        if do_timetable_settings and shifting in month_range:
             row.append(month_abbr_ru[shifting])
         elif not do_timetable_settings:
             row.append(month_abbr_ru[shifting])
-        if i % 3 == 0:
+        if i % 3 == 0:  # разбиение на строки по сезонам (выглядит хорошо только когда 12 из 12 мес)
             rows.append([InlineKeyboardButton(x, callback_data=month_ru.index(x) + 1) for x in row])
-        row.clear()
+            row.clear()
     return rows
 
 

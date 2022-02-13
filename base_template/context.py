@@ -45,9 +45,9 @@ timetable_editor_nav_msg = "Вы перешли в раздел редактир
 timetable_editor_comeback_msg = "Вы вернулись в раздел редактирования режима онлайн-записи."
 timetable_comeback_msg = "Вы вернулись в меню онлайн-записей."
 holidays_menu_nav_msg = "Вы находитесь в меню управления отпуском."
-main_menu_comeback_exc_msg = "Пока невозможно вернуться во время записи."
 
 # ---- exception messages:
+main_menu_comeback_exc_msg = "Пока невозможно вернуться во время записи."
 make_appointment_exc_msg = 'В данный момент онлайн-запись через бота недоступна.'
 without_appointment_exc_msg__info = "У вас нет текущей записи на данный момент."
 without_appointment_exc_msg__cancel = "Вы и так не записаны."
@@ -58,6 +58,9 @@ with_holidays_exc_msg__setting = "У вас уже есть запланиров
 dates_between_exc_msg = "Введён некорректный временной диапазон между записями.\n" \
                         "Необходимо ввести целое положительное число"
 all_the_exc_msg = "Ошибка, выберите предложенный вариант."
+online_timetable_is_off_exc_msg = "В данный момент онлайн-запись отключена. Если вы были записаны до этого," \
+                                  "и вашу запись не отменил администратор, то ваш приём состоится," \
+                                  "вы также можете отменить запись, если хотите."
 
 # ---- tips-messages:
 timetable_range_tip_msg = "Установите возможный диапазон для записи."
@@ -82,3 +85,4 @@ pass_message = "Сюда функционал ещё не завезли"
 conv_handler_stop_msg = "Остановлено."
 authorized_already_msg = "Вы уже авторизованы.\n"
 working_hours_choosing_msg2 = "Теперь введите время прекращения работы"
+dates_between_range_has_been_set_msg = "Промежуток между записями успешно установлен!"

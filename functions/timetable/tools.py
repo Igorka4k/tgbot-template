@@ -55,7 +55,7 @@ class CalendarCog:
         formatted_date = f"{date[0]}-{date[1]}-{date[2]}"
         return formatted_date
 
-    def get_hours_keyboard(self, begin=None, end=None, between_range=None, date=None):
+    def get_hours_keyboard(self, begin=None, end=None, between_range=None):
         if begin and end:
             begin = datetime.time(int(begin.split(":")[0]), int(begin.split(":")[1]))
             end = datetime.time(int(end.split(":")[0]), int(end.split(":")[1]))
@@ -67,16 +67,8 @@ class CalendarCog:
         iter_time = begin
         if between_range is None:
             between_range = 10  # Диапазон между записями.
-        if date is not None:
-            existing_date_times = []
-            print(date)
-            for i in get_dates(db_connect()):
-                existing_date_times.append(datetime.datetime(hour=int(i['time'].split(":")[0]),
-                                                             minute=int(i['time'].split(':')[1])))
-            print("Всё время, которое занято в данный день:", existing_date_times)
         while iter_time <= end:
-            if date is not None and iter_time not in existing_date_times:
-                hours_keyboard.append([iter_time.strftime("%H:%M")])
+            hours_keyboard.append([iter_time.strftime("%H:%M")])
             timedelta = datetime.timedelta(hours=iter_time.hour, minutes=iter_time.minute) \
                         + datetime.timedelta(minutes=between_range)
             total_seconds = int(timedelta.total_seconds())

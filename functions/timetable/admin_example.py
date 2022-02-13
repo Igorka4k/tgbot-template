@@ -155,7 +155,8 @@ def dates_between_range(update, ctx):
 
         ctx.user_data["state"] = 'online_appointment_settings'
         keyboard = ReplyKeyboardMarkup(ONLINE_TIMETABLE_SETTINGS, resize_keyboard=True)
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_editor_nav_msg,
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"{dates_between_range_has_been_set_msg}\n"
+                                                                    f"{timetable_editor_comeback_msg}",
                              reply_markup=keyboard)
         return "online_appointment_settings"
     except Exception as ex:

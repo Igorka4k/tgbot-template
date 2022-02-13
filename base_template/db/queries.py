@@ -222,7 +222,6 @@ def switch_timetable_working(connection):
         clear_query = 'DELETE FROM `is_timetable_working` WHERE id'
         cursor.execute(clear_query)
         connection.commit()
-        print("i am here doshel")
         # new value setting:
         if value == 1:
             set_query = f"INSERT INTO `is_timetable_working` (value)" \
