@@ -1,3 +1,4 @@
+import os
 from os import path, environ
 from dotenv import load_dotenv
 from telegram import ParseMode, InputMediaPhoto
@@ -108,9 +109,12 @@ def menu(update, ctx):
         prices = [(i["title"], i["price"]) for i in data]
         # в callback_data попробовать передать ctx.user_data["state"] для реализации новой логики меню.
         keyboard = ReplyKeyboardMarkup([[f"{i[0]} ({i[1]} руб)"] for i in prices] + [[back_to_menu_btn]])
-        ctx.bot.send_message(chat_id=update.effective_chat.id,
-                             text=f"{price_checklist_msg}",
-                             reply_markup=keyboard)
+        print(os.curdir)
+        ctx.bot.send_photo(chat_id=update.effective_chat.id, photo=open("base_template/icon.jpg", 'rb'),
+                           caption=price_checklist_msg, reply_markup=keyboard)
+        # ctx.bot.send_message(chat_id=update.effective_chat.id,
+        #                      text=f"{price_checklist_msg}",
+        #                      reply_markup=keyboard)
         return "check_price_list"
 
     elif msg == all_the_text_editor_btn:
@@ -304,10 +308,12 @@ def check_price_list(update, ctx):
         return 'menu'
     msg = ' '.join(msg.split()[:-2])
     if msg in ctx.user_data["price_info"].keys():
-        ctx.bot.send_message(chat_id=update.effective_chat.id,
-                             text=f"Услуга: {msg}\n"
-                                  f"Цена: {ctx.user_data['price_info'][msg]['price']} рублей\n"
-                                  f"Описание: {ctx.user_data['price_info'][msg]['description']}")
+        msg_to_send = f"Услуга: {msg}\n" \
+                      f"Цена: {ctx.user_data['price_info'][msg]['price']} рублей\n" \
+                      f"Описание: {ctx.user_data['price_info'][msg]['description']}"
+        ctx.bot.send_photo(chat_id=update.message.chat_id,
+                           photo=bytes(ctx.user_data['price_info'][msg]['img']),
+                           caption=msg_to_send)
 
 
 def all_the_callback(update, ctx):
@@ -321,7 +327,7 @@ def all_the_callback(update, ctx):
         days_keyboard = InlineKeyboardMarkup(get_days_keys(year, month,
                                                            do_timetable_settings=ctx.user_data["make_an_appointment"],
                                                            timetable_settings=ctx.user_data["timetable_settings"]))
-        query.edit_message_text(text=f"Вы {month_abbr_ru[month]} выбрали.",
+        query.edit_message_text(text=f"Вы выбрали {month_dict_name_ru[month]}.",
                                 reply_markup=days_keyboard)
         ctx.user_data["date_of_appointment"].extend([year, month])
         ctx.user_data["state"] = "day_choosing"

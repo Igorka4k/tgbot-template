@@ -27,6 +27,7 @@ def db_connect():
 
 def get_datetime_from_formatting(formatting_date):
     year, month, day = map(int, formatting_date.split(",")[0].split("-"))
+    print(formatting_date)
     hour, minute = map(int, formatting_date.split(",")[1].split(":"))
     return datetime.datetime(year=year, month=month, day=day, hour=hour, minute=minute)
 

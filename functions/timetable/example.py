@@ -204,7 +204,6 @@ def timetable_script_finish(update, ctx):
         queries.make_an_appointment(connection, full_name, date, time, tg_account)
         ctx.user_data["is_date_choice"] = False
         ctx.user_data["make_an_appointment"] = False
-
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Вы записаны на {formatting_date}\n" + promise_msg,
                              reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
         datetime_from_formatting = get_datetime_from_formatting(formatting_date)
