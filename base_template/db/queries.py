@@ -212,8 +212,8 @@ def switch_timetable_working(connection):
         try:
             value = int(cursor.fetchone()['value'])
         except Exception as ex:
-            print("ATTENTION!", ex)
-            set_query = f"INSERT INTO `is_timetable_working` (value) VALUE('0'); "
+            print(ex)
+            set_query = f"INSERT INTO `is_timetable_working` (value) VALUE('1'); "
             cursor.execute(set_query)
             connection.commit()
             print("value has been initialized..")
@@ -239,8 +239,15 @@ def get_is_timetable_working(connection):
     with connection.cursor() as cursor:
         get_query = 'SELECT * FROM `is_timetable_working`'
         cursor.execute(get_query)
-        result = cursor.fetchone()['value']
-        print('value is', result)
+        try:
+            result = cursor.fetchone()['value']
+        except Exception as ex:
+            print(ex)
+            set_query = f"INSERT INTO `is_timetable_working` (value) VALUE('1'); "
+            cursor.execute(set_query)
+            connection.commit()
+            print("value has been initialized..")
+            result = cursor.fetchone()['value']
         return True if result == "1" else False
 
 
@@ -367,5 +374,5 @@ def clear_appointment(connection, info):
 # else:
 #     raise ImportError("Can't import environment variables")
 # connection = db_connect()
-#
-#
+
+

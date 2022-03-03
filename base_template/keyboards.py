@@ -38,13 +38,21 @@ ONLINE_TIMETABLE_SETTINGS = [[timetable_range_btn, weekends_btn, holidays_btn],
 
 
 def online_timetable_hours():
-    working_hours = get_working_hours(db_connect())
-    between_range = get_dates_between_range(db_connect())
-    ONLINE_TIMETABLE_HOURS = CalendarCog().get_hours_keyboard(  # пока не используется
-        begin=working_hours['begin'],
-        end=working_hours['end'],
-        between_range=between_range)
-    return ONLINE_TIMETABLE_HOURS
+    try:
+        working_hours = get_working_hours(db_connect())
+        between_range = get_dates_between_range(db_connect())
+        ONLINE_TIMETABLE_HOURS = CalendarCog().get_hours_keyboard(  # пока не используется
+            begin=working_hours['begin'],
+            end=working_hours['end'],
+            between_range=between_range)
+        return ONLINE_TIMETABLE_HOURS
+    except Exception as ex:
+        ONLINE_TIMETABLE_HOURS = CalendarCog().get_hours_keyboard(  # пока не используется
+            begin="08:00",
+            end="22:00",
+            between_range=30)
+        return ONLINE_TIMETABLE_HOURS
+
 
 
 TIMETABLE_HOURS_ADMIN1 = CalendarCog().get_hours_keyboard(
