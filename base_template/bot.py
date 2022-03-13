@@ -28,6 +28,7 @@ def start(update, ctx):
     ctx.user_data["is_admin"] = True if update.effective_chat.id in ADMIN_CHAT else False
     ctx.user_data["connection"] = db_connect()
     ctx.user_data['full_name'] = ''
+    ctx.user_data['date_of_appointment'] = {'year': None, 'month': None, 'day': None, 'time': None}  # test_line
 
     # ==== timetable_settings:
     ctx.user_data["timetable_settings"] = {
@@ -35,6 +36,7 @@ def start(update, ctx):
         "working_hours": queries.get_working_hours(db_connect()),
         "days_off": queries.get_days_off(db_connect()),
         "holidays": queries.get_holidays(db_connect()),
+        "between_range": queries.get_dates_between_range(db_connect())
     }
 
     if update.message.from_user['first_name'] is not None:
@@ -78,8 +80,6 @@ def menu(update, ctx):
         else:
             ctx.bot.send_message(chat_id=update.effective_chat.id, text=timetable_menu_nav_msg__user,
                                  reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
-        # else:
-        #     ctx.bot.send_message(chat_id=update.effective_chat.id, text=make_appointment_exc_msg)
         return 'online_appointment'
 
     elif msg == certificates_btn:
@@ -109,7 +109,6 @@ def menu(update, ctx):
         prices = [(i["title"], i["price"]) for i in data]
         # в callback_data попробовать передать ctx.user_data["state"] для реализации новой логики меню.
         keyboard = ReplyKeyboardMarkup([[f"{i[0]} ({i[1]} руб)"] for i in prices] + [[back_to_menu_btn]])
-        print(os.curdir)
         ctx.bot.send_photo(chat_id=update.effective_chat.id, photo=open("base_template/icon.jpg", 'rb'),
                            caption=price_checklist_msg, reply_markup=keyboard)
         # ctx.bot.send_message(chat_id=update.effective_chat.id,
@@ -183,7 +182,18 @@ def online_appointment(update, ctx):
                 ctx.bot.send_message(chat_id=update.effective_chat.id,
                                      text=msg_to_send)
             else:
-                return timetable_script_begin(update, ctx)  # сценарий записи на приём
+                between_range = datetime.timedelta(
+                    hours=int(ctx.user_data['timetable_settings']['between_range']) // 60,
+                    minutes=int(ctx.user_data['timetable_settings']['between_range']) % 60)
+
+                ctx.user_data['is_date_choice'] = False  # заглушка для выборки времени, чтобы сначала выбиралась дата.
+
+                return calendar_gen(update, ctx, do_calendar_settings=True, between_range=between_range,
+                                    working_hours=ctx.user_data['timetable_settings']['working_hours'],
+                                    holidays=ctx.user_data['timetable_settings']['holidays'],
+                                    days_off=ctx.user_data['timetable_settings']['days_off'],
+                                    timetable_range=ctx.user_data['timetable_settings']['timetable_range'])
+                # return timetable_script_begin(update, ctx)  # старый алгоритм записи на приём
 
         elif msg == appointment_info_btn:
             last_date = get_user_last_date(db_connect(), ctx.user_data["tg_account"])
@@ -201,6 +211,7 @@ def online_appointment(update, ctx):
             else:
                 delete_appointment(db_connect(), ctx.user_data["tg_account"])
                 msg_to_send = f"Запись от {last_date['date']}, {last_date['time']} отменена."
+            ctx.user_data['date_of_appointment'] = {'year': None, 'month': None, 'day': None, 'time': None}  # test_line
             ctx.bot.send_message(chat_id=update.effective_chat.id,
                                  text=msg_to_send)
     return 'online_appointment'
@@ -321,6 +332,53 @@ def all_the_callback(update, ctx):
     data = query.data
     if data == "pass":
         return
+    elif ctx.user_data['state'] == 'month_choosing2':
+        month_num = int(data)
+        year = CalendarCog().get_year(month_num)
+        ctx.user_data['date_of_appointment']['year'] = year
+        ctx.user_data['date_of_appointment']['month'] = month_num
+        ctx.user_data['state'] = 'day_choosing2'
+        days_keyboard = get_days_keys2(update, ctx, month_num=month_num)
+        query.edit_message_text(text=f"{month_dict_name_ru[month_num].capitalize()}\n{choose_the_day}",
+                                reply_markup=days_keyboard)
+
+    elif ctx.user_data['state'] == 'day_choosing2':
+        # test (the couple of lines below might move somewhere)
+        entrance_index = datetime.date.today().month
+        end_index = entrance_index + int(ctx.user_data['timetable_settings']['timetable_range']) // 30
+        if data == '>>':
+            month_num = int(ctx.user_data['date_of_appointment']['month']) + 1
+            if not ctx.user_data['my_all_the_dates'][0].months[month_num - 1].available:  # right shifting
+                month_num = entrance_index
+                ctx.user_data['date_of_appointment']['month'] = entrance_index
+            else:
+                ctx.user_data['date_of_appointment']['month'] = ctx.user_data['date_of_appointment']['month'] + 1
+            days_keyboard = get_days_keys2(update, ctx, month_num=month_num)
+            query.edit_message_text(text=f'{month_dict_name_ru[month_num]}'.capitalize(), reply_markup=days_keyboard)
+        elif data == '<<':
+            month_num = int(ctx.user_data['date_of_appointment']['month']) - 1
+            if not ctx.user_data['my_all_the_dates'][0].months[month_num - 1].available:  # left shifting
+                month_num = end_index
+                ctx.user_data['date_of_appointment']['month'] = end_index
+            else:
+                ctx.user_data['date_of_appointment']['month'] = ctx.user_data['date_of_appointment']['month'] - 1
+            days_keyboard = get_days_keys2(update, ctx, month_num=month_num)
+            query.edit_message_text(text=f'{month_dict_name_ru[month_num]}'.capitalize(), reply_markup=days_keyboard)
+
+        elif data == 'month_re-elect':
+            ctx.user_data['date_of_appointment']['month'] = None
+            query.edit_message_text(text=choose_the_month, reply_markup=get_months_nav(update, ctx))
+        else:  # user choice date case:
+            day_num = int(data)
+            ctx.user_data['date_of_appointment']['day'] = day_num
+            formatting_date = CalendarCog().chosen_date_formatting(ctx.user_data["date_of_appointment"])
+            query.edit_message_text(text=f"Выбрана дата: {formatting_date}\n",
+                                    parse_mode=ParseMode.MARKDOWN)
+            ctx.user_data['is_date_choice'] = True
+            ctx.bot.send_message(chat_id=update.effective_chat.id,
+                                 text='Выберите время:',
+                                 reply_markup=get_time_keys(update, ctx))
+
     elif ctx.user_data["state"] == "month_choosing":
         month = int(data)
         year = CalendarCog().get_year(month)
@@ -329,12 +387,14 @@ def all_the_callback(update, ctx):
                                                            timetable_settings=ctx.user_data["timetable_settings"]))
         query.edit_message_text(text=f"Вы выбрали {month_dict_name_ru[month]}.",
                                 reply_markup=days_keyboard)
-        ctx.user_data["date_of_appointment"].extend([year, month])
+        ctx.user_data["date_of_appointment"]['year'] = year
+        ctx.user_data['date_of_appointment']['month'] = month
         ctx.user_data["state"] = "day_choosing"
+        get_time_keys(update, ctx)
 
     elif ctx.user_data["state"] == "day_choosing":
         day = int(data)
-        ctx.user_data["date_of_appointment"].append(day)
+        ctx.user_data["date_of_appointment"]['day'] = day
         ctx.user_data["only_table_val"] = only_table_val = CalendarCog().get_hours_keyboard(
             begin=ctx.user_data["timetable_settings"]["working_hours"]["begin"],
             end=ctx.user_data["timetable_settings"]["working_hours"]["end"],
@@ -350,13 +410,15 @@ def all_the_callback(update, ctx):
         elif ctx.user_data["choose_holidays"][1]:
             ctx.user_data["choose_holidays"][1] = False
             ctx.user_data["choose_holidays"][2] = True
-            ctx.user_data["choose_holidays"]["first_date"] = '-'.join(
-                [str(i) for i in ctx.user_data["date_of_appointment"]])
+            ctx.user_data["choose_holidays"]["first_date"] = f'{ctx.user_data["date_of_appointment"]["year"]}-' \
+                                                             f'{ctx.user_data["date_of_appointment"]["month"]}-' \
+                                                             f'{ctx.user_data["date_of_appointment"]["day"]}'
             calendar_build(update, ctx, entry_state="month")
         elif ctx.user_data["choose_holidays"][2]:
             ctx.user_data["choose_holidays"][2] = False
-            ctx.user_data["choose_holidays"]["second_date"] = '-'.join(
-                [str(i) for i in ctx.user_data["date_of_appointment"]])
+            ctx.user_data["choose_holidays"]["second_date"] = f'{ctx.user_data["date_of_appointment"]["year"]}-' \
+                                                              f'{ctx.user_data["date_of_appointment"]["month"]}-' \
+                                                              f'{ctx.user_data["date_of_appointment"]["day"]}'
             first_date = ctx.user_data["choose_holidays"]["first_date"]
             second_date = ctx.user_data["choose_holidays"]["second_date"]
             f_year, f_month, f_day = map(int, first_date.split("-"))
@@ -464,6 +526,7 @@ main_menu_conv_handler = ConversationHandler(
         "month_choosing": [MessageHandler(Filters.text & (~Filters.command), month_choosing)],
         "day_choosing": [MessageHandler(Filters.text & (~Filters.command), day_choosing)],
         "time_choosing": [MessageHandler(Filters.text & (~Filters.command), time_choosing)],
+        'time_choosing2': [MessageHandler(Filters.text & (~Filters.command), time_choosing2)],
 
         # below the online_appointment_settings handlers:
         "online_appointment_settings": [MessageHandler(Filters.text & (~Filters.command),

@@ -14,7 +14,7 @@ if __name__ == "__main__":
     from base_template.bot import *
     from base_template.db.sql_init import initialize
 
-    initialize(db_connect())
+    # initialize(db_connect())  # инициализация таблиц базы данных.
     updater.start_polling()
     updater.idle()
     # updater.job_queue.start()  # для теста уведомлений

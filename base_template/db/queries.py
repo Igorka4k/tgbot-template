@@ -116,8 +116,9 @@ def get_timetable_range(connection):
         cursor.execute(query)
         timetable_range = cursor.fetchone()
         if timetable_range is None:
-            set_timetable_range(connection, mode=90)
-            return get_timetable_range(connection)
+            mode = 90
+            set_timetable_range(connection, mode=mode)
+            return mode
         return int(timetable_range["mode"])
 
 
@@ -265,7 +266,11 @@ def get_dates_between_range(connection):
         cursor.execute(query)
         current_range = cursor.fetchone()
         if current_range is None:
-            return None
+            mode = 30  # appointments duration (min)
+            insert_query = f"INSERT INTO `between_range` (mode) VALUES ('{mode}');"
+            cursor.execute(insert_query)
+            connection.commit()
+            return mode
         return int(current_range["between_range"])
 
 

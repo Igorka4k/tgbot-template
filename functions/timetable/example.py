@@ -73,14 +73,15 @@ def calendar_date_callback(update, ctx):  # пока не используетс
                                   query.message.chat.id,
                                   query.message.message_id)
         year, month, day = str(result).split("-")
-        ctx.user_data["date_of_appointment"].extend([year, month, day])  # (Порядок: год-месяц-день)
+        ctx.user_data["date_of_appointment"]['year'] = year  # (Порядок: год-месяц-день)
+        ctx.user_data["date_of_appointment"]['month'] = month  # (Порядок: год-месяц-день)
+        ctx.user_data["date_of_appointment"]['day'] = day  # (Порядок: год-месяц-день)
 
         # time_choosing redirect:
         keyboard = ReplyKeyboardMarkup(CalendarCog().get_hours_keyboard(
             begin=ctx.user_data["timetable_settings"]["working_hours"]["begin"],
             end=ctx.user_data["timetable_settings"]["working_hours"]["end"],
             between_range=queries.get_dates_between_range(db_connect()),
-            date=ctx.user_data['date_of_appointment']
         ), resize_keyboard=True)
         ctx.bot.send_message(chat_id=update.effective_chat.id, text=time_choosing_tip_msg, reply_markup=keyboard)
         ctx.user_data["is_date_choice"] = True
@@ -134,8 +135,8 @@ def month_choosing(update, ctx):
     }
     choice_month = word_to_num[msg]
     year = CalendarCog().get_year(choice_month)
-    ctx.user_data["date_of_appointment"].append(year)
-    ctx.user_data["date_of_appointment"].append(choice_month)
+    ctx.user_data["date_of_appointment"]['year'] = year
+    ctx.user_data["date_of_appointment"]['month'] = choice_month
     day_choosing_keyboard = CalendarCog().get_days_keyboard(year, choice_month)
     keyboard = ReplyKeyboardMarkup(day_choosing_keyboard, resize_keyboard=True)
     ctx.bot.send_message(chat_id=update.effective_chat.id, text=time_choosing_tip_msg, reply_markup=keyboard)
@@ -155,12 +156,55 @@ def day_choosing(update, ctx):
     return "time_choosing"
 
 
+def time_choosing2(update, ctx):
+    if not ctx.user_data["is_date_choice"]:
+        return "time_choosing"
+    year = ctx.user_data['date_of_appointment']['year']
+    month = ctx.user_data['date_of_appointment']['month']
+    day = ctx.user_data['date_of_appointment']['day']
+    all_times = [[':'.join(list(map(str, i.time)))] for i in
+                 ctx.user_data['my_all_the_dates'][0].months[int(month) - 1].days[int(day) - 1].time]
+    # TEST below:
+    for i in range(len(all_times)):
+        new_row = list(all_times[i][0])
+        if len(all_times[i][0].split(":")[0]) != 2:
+            new_row.insert(0, '0')
+            all_times[i][0] = ''.join(new_row)
+        if len(all_times[i][0].split(":")[1]) != 2:
+            new_row.insert(-1, '0')
+            all_times[i][0] = ''.join(new_row)
+    time = msg = update.message.text.lower()
+    # inline func decorator:
+    if msg == back_to_menu_btn:
+        ctx.bot.send_message(chat_id=update.effective_chat.id, text=main_menu_comeback_exc_msg)
+        return "time_choosing2"
+    if msg not in [i[0].lower() for i in all_times]:
+        ctx.bot.send_message(chat_id=update.effective_chat.id,
+                             text=all_the_exc_msg)
+        return "time_choosing2"
+
+    ctx.user_data["date_of_appointment"]['time'] = time
+    # test (busy time deleting):
+    year = int(ctx.user_data['date_of_appointment']['year'])
+    month = int(ctx.user_data['date_of_appointment']['month'])
+    day = int(ctx.user_data['date_of_appointment']['day'])
+    all_dates = ctx.user_data['my_all_the_dates']
+    all_times = all_dates[0].months[month - 1].days[day - 1].time
+    for t in all_times:
+        if t.str_time == time:
+            t.available = False
+            ctx.bot.send_message(chat_id=update.effective_chat.id,
+                                 text=f'Вы заняли время {time}, оно не будет доступно другим')
+            break
+    return timetable_script_finish(update, ctx)
+
+
 # метод partial тут скрыт, это спецом
 @functools.partial(only_table_values,
                    collection=online_timetable_hours(),
                    keyboard_type="time")
 def time_choosing(update, ctx):
-    msg = update.message.text
+    time = msg = update.message.text
     # if [msg] not in ctx.user_data["only_table_val"]:
     #     keyboard = ReplyKeyboardMarkup(ctx.user_data["only_table_val"], resize_keyboard=True)
     #     ctx.bot.send_message(chat_id=update.effective_chat.id,
@@ -173,41 +217,40 @@ def time_choosing(update, ctx):
     #     return 'online_appointment'
     if not ctx.user_data["is_date_choice"]:
         return "time_choosing"
-    ctx.user_data["date_of_appointment"].append(msg)
-
+    ctx.user_data["date_of_appointment"]['time'] = time
     return timetable_script_finish(update, ctx)
 
 
 def timetable_script_finish(update, ctx):
     date = ctx.user_data["date_of_appointment"]
-    date[1] = "0" + str(date[1]) if len(str(date[1])) == 1 else str(date[1])  # month_formatted.
-    date[2] = "0" + str(date[2]) if len(str(date[2])) == 1 else str(date[2])  # day_formatted.
-    formatting_date = f"{date[0]}-{date[1]}-{date[2]}, {date[3]}"
-    if ctx.user_data["make_an_appointment"]:
-        connection = db_connect()
-        try:
-            name = update.message.from_user["first_name"]
-            surname = update.message.from_user["last_name"]
-            if name is None:
-                name = anonymous_name
-            if surname is None:
-                surname = anonymous_surname
-            full_name = name + " " + surname
-        except Exception as ex:
-            print(ex)
-            full_name = anonymous_name + " " + anonymous_surname
+    date['month'] = "0" + str(date['month']) if len(str(date['month'])) == 1 else str(date['month'])  # month_formatted.
+    date['day'] = "0" + str(date['day']) if len(str(date['day'])) == 1 else str(date['day'])  # day_formatted.
+    formatting_date = f"{date['year']}-{date['month']}-{date['day']}, {date['time']}"
+    # if ctx.user_data["make_an_appointment"]:
+    connection = db_connect()
+    try:
+        name = update.message.from_user["first_name"]
+        surname = update.message.from_user["last_name"]
+        if name is None:
+            name = anonymous_name
+        if surname is None:
+            surname = anonymous_surname
+        full_name = name + " " + surname
+    except Exception as ex:
+        print(ex)
+        full_name = anonymous_name + " " + anonymous_surname
 
-        time = date[3]
-        date = f"{date[2]}-{date[1]}-{date[0]}"
+    time = date['time']
+    date = f"{date['day']}-{date['month']}-{date['year']}"
 
-        tg_account = update.message.from_user["username"]
-        queries.make_an_appointment(connection, full_name, date, time, tg_account)
-        ctx.user_data["is_date_choice"] = False
-        ctx.user_data["make_an_appointment"] = False
-        ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Вы записаны на {formatting_date}\n" + promise_msg,
-                             reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
-        datetime_from_formatting = get_datetime_from_formatting(formatting_date)
-        notifies.schedule_notify(update, ctx, datetime_from_formatting, time=time, date=date)
+    tg_account = update.message.from_user["username"]
+    queries.make_an_appointment(connection, full_name, date, time, tg_account)
+    ctx.user_data["is_date_choice"] = False
+    ctx.user_data["make_an_appointment"] = False
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text=f"Вы записаны на {formatting_date}\n" + promise_msg,
+                         reply_markup=ReplyKeyboardMarkup(ONLINE_TIMETABLE_user_menu, resize_keyboard=True))
+    datetime_from_formatting = get_datetime_from_formatting(formatting_date)
+    notifies.schedule_notify(update, ctx, datetime_from_formatting, time=time, date=date)
     return "online_appointment"
 
 

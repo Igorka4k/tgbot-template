@@ -27,7 +27,6 @@ def db_connect():
 
 def get_datetime_from_formatting(formatting_date):
     year, month, day = map(int, formatting_date.split(",")[0].split("-"))
-    print(formatting_date)
     hour, minute = map(int, formatting_date.split(",")[1].split(":"))
     return datetime.datetime(year=year, month=month, day=day, hour=hour, minute=minute)
 
@@ -52,8 +51,9 @@ class CalendarCog:
         return days_keyboard
 
     def chosen_date_formatting(self, date):
-        date[1] = "0" + str(date[1]) if len(str(date[1])) == 1 else str(date[1])  # month_formatted.
-        formatted_date = f"{date[0]}-{date[1]}-{date[2]}"
+        date['month'] = "0" + str(date['month']) if len(str(date["month"])) == 1 else str(date['month'])
+        date['day'] = "0" + str(date['day']) if len(str(date["day"])) == 1 else str(date['day'])
+        formatted_date = f"{date['year']}-{date['month']}-{date['day']}"
         return formatted_date
 
     def get_hours_keyboard(self, begin=None, end=None, between_range=None):
